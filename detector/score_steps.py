@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Evaluate detector predictions against unified-schema annotations.
 
-The detector now consumes unified trajectories (``data/unified/<dataset>/*.json``)
+The detector consumes unified trajectories (one JSON file per trajectory)
 whose ``metadata.annotation`` records the ground-truth ``critical_error_step``
 and ``critical_error_type`` (``"<module>.<subtype>"`` or ``null``). For every
 labeled trajectory we look up the matching detector output

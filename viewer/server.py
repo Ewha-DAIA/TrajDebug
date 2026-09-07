@@ -1,13 +1,13 @@
 """Local web app for inspecting agent trajectories alongside detector diagnoses.
 
 Run:
-    python -m viewer.server --dataset alfworld --output-dir outputs
+    python -m viewer.server --dataset trajerrbench_zh_tau2bench --output-dir outputs
     # then open http://localhost:8000
 
 Given a dataset name and an output folder, the server locates three files per
 trajectory and serves them to a single-page UI:
 
-    unified trajectory : <unified_root>/<dataset>/<task_id>.json
+    unified trajectory : <registered dataset path>/<task_id>.json
     Phase 1            : <output_dir>/<dataset>_phase1/<task_id>_stage_c_phase1.json
     Phase 2            : <output_dir>/<dataset>_phase2/<task_id>_stage_c_phase2.json
     Feedback report    : <output_dir>/<dataset>_report/<task_id>_report.json
@@ -22,6 +22,8 @@ import json
 import re
 from pathlib import Path
 from typing import Optional
+
+from data_processing.dataset_registry import available_datasets, dataset_path
 
 try:
     import uvicorn
@@ -55,7 +57,7 @@ _GT_RE = re.compile(
 BASE_DIR = Path.cwd()
 DEFAULT_DATASET = ""
 DEFAULT_OUTPUT_DIR = "outputs"
-DEFAULT_UNIFIED_ROOT = "data/unified"
+DEFAULT_UNIFIED_ROOT = "registry"
 
 # mtime-keyed cache for the cheap ground-truth scan used by the list endpoint.
 _GT_CACHE: dict[str, tuple[float, int | None]] = {}
@@ -75,6 +77,16 @@ def _resolve_root(root: str) -> Path:
     if not p.is_absolute():
         p = BASE_DIR / p
     return p.resolve()
+
+
+def _resolve_dataset_dir(dataset: str, unified_root: str) -> Path:
+    """Resolve a dataset through the registry or an explicit legacy root."""
+    if unified_root == "registry":
+        try:
+            return dataset_path(dataset)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _resolve_root(unified_root) / dataset
 
 
 def _read_gt_step(phase1_path: Path) -> int | None:
@@ -111,11 +123,14 @@ def _list_datasets(output_dir: str, unified_root: str) -> list[str]:
                 if d.name.endswith(suf):
                     names.add(d.name[: -len(suf)])
                     break
-    uni = _resolve_root(unified_root)
-    if uni.is_dir():
-        for d in uni.iterdir():
-            if d.is_dir():
-                names.add(d.name)
+    if unified_root == "registry":
+        names.update(available_datasets())
+    else:
+        uni = _resolve_root(unified_root)
+        if uni.is_dir():
+            for d in uni.iterdir():
+                if d.is_dir():
+                    names.add(d.name)
     return sorted(names)
 
 
@@ -144,11 +159,10 @@ def api_trajectories(
 ):
     dataset = _safe_name(dataset, "dataset")
     out = _resolve_root(output_dir or DEFAULT_OUTPUT_DIR)
-    uni = _resolve_root(unified_root or DEFAULT_UNIFIED_ROOT)
+    uni_dir = _resolve_dataset_dir(dataset, unified_root or DEFAULT_UNIFIED_ROOT)
 
     report_dir = out / f"{dataset}_report"
     phase1_dir = out / f"{dataset}_phase1"
-    uni_dir = uni / dataset
 
     ids: dict[str, dict] = {}
     if uni_dir.is_dir():
@@ -204,9 +218,9 @@ def api_trajectory(
     dataset = _safe_name(dataset, "dataset")
     task_id = _safe_name(task_id, "task_id")
     out = _resolve_root(output_dir or DEFAULT_OUTPUT_DIR)
-    uni = _resolve_root(unified_root or DEFAULT_UNIFIED_ROOT)
+    uni_dir = _resolve_dataset_dir(dataset, unified_root or DEFAULT_UNIFIED_ROOT)
 
-    unified_file = uni / dataset / f"{task_id}.json"
+    unified_file = uni_dir / f"{task_id}.json"
     phase1_file = out / f"{dataset}_phase1" / f"{task_id}_stage_c_phase1.json"
     phase2_file = out / f"{dataset}_phase2" / f"{task_id}_stage_c_phase2.json"
     report_file = out / f"{dataset}_report" / f"{task_id}_report.json"
@@ -262,8 +276,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--unified-root",
-        default="data/unified",
-        help="root holding <dataset>/<task_id>.json unified trajectories",
+        default="registry",
+        help="use 'registry' (default) or a root holding <dataset>/<task_id>.json",
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)

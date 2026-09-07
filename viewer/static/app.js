@@ -6,7 +6,7 @@
 const els = {};
 const state = {
   outputDir: "outputs",
-  unifiedRoot: "data/unified",
+  unifiedRoot: "registry",
   dataset: "",
   taskId: "",
   trajectories: [],

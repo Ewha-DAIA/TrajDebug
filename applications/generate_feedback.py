@@ -16,13 +16,13 @@ The report includes:
 
 Usage:
     python applications/generate_feedback.py \\
-        --final_dir outputs/alfworld_final \\
-        --trajectory_dir data/unified/alfworld \\
-        --output_dir outputs/alfworld_report \\
+        --final_dir outputs/trajerrbench_zh_tau2bench_final \\
+        --trajectory_dir data/trajerrbench/zh/tau2bench \\
+        --output_dir outputs/trajerrbench_zh_tau2bench_report \\
         --base_url <endpoint> \\
         --model <model> \\
         --api_key <key> \\
-        --cache .cache/trajdebug/exp_qwen_alfworld_report.pkl \\
+        --cache .cache/trajdebug/exp_qwen_tau2bench_report.pkl \\
         --concurrency 32 \\
         --resume
 """

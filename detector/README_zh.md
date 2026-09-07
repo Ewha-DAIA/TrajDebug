@@ -7,7 +7,7 @@ detector 通过 OpenAI-compatible LLM 端点，在失败轨迹中定位关键错
 ## 流水线
 
 ```text
-data/unified/<dataset>/*.json
+注册的 detector-ready 数据/*.json
   → Stage A：多粒度压缩
   → Stage B：基于证据的错误 trigger
   → Stage C1：按对象聚合错误实例
@@ -40,7 +40,7 @@ export OPENAI_API_KEY="..."
 export OPENAI_BASE_URL="https://api.openai.com/v1"
 export DETECTOR_MODEL="your-model-name"
 
-DATASETS="alfworld" bash run_pipeline.sh
+DATASETS="trajerrbench_zh_tau2bench" bash run_pipeline.sh
 ```
 
 runner 支持断点续跑，默认写入 `outputs`：
@@ -54,23 +54,25 @@ outputs/<dataset>_final/
 outputs/score_<dataset>.json
 ```
 
-用 `UNIFIED_ROOT` 和 `OUTPUT_ROOT` 覆盖路径；用 `FILE_CONCURRENCY`、`LLM_CONCURRENCY`、`MAX_TOKENS`、`TEMPERATURE` 调整请求。
+数据位置由 `data_processing/dataset_registry.py` 解析；可用
+`OUTPUT_ROOT` 覆盖输出路径，并用 `FILE_CONCURRENCY`、`LLM_CONCURRENCY`、
+`MAX_TOKENS`、`TEMPERATURE` 调整请求。
 
 ## 评测
 
 ```bash
 python detector/score_steps.py \
-  --unified-dir data/unified/alfworld \
-  --pred-dir outputs/alfworld_final \
-  --out outputs/score_alfworld.json
+  --unified-dir data/trajerrbench/zh/tau2bench \
+  --pred-dir outputs/trajerrbench_zh_tau2bench_final \
+  --out outputs/score_trajerrbench_zh_tau2bench.json
 
 python detector/score_steps_breakdown.py \
-  --unified-dir data/unified/alfworld \
-  --pred-dir outputs/alfworld_final \
-  --stage-b-dir outputs/alfworld_stage_b \
-  --phase1-dir outputs/alfworld_phase1 \
-  --phase2-dir outputs/alfworld_phase2 \
-  --out outputs/breakdown_alfworld.json
+  --unified-dir data/trajerrbench/zh/tau2bench \
+  --pred-dir outputs/trajerrbench_zh_tau2bench_final \
+  --stage-b-dir outputs/trajerrbench_zh_tau2bench_stage_b \
+  --phase1-dir outputs/trajerrbench_zh_tau2bench_phase1 \
+  --phase2-dir outputs/trajerrbench_zh_tau2bench_phase2 \
+  --out outputs/breakdown_trajerrbench_zh_tau2bench.json
 ```
 
 评分器报告 exact、loose-1、loose-2 步准确率，并在标签可用时报告 taxonomy 指标。成功轨迹与 system failure 不参与评分。
@@ -81,10 +83,10 @@ python detector/score_steps_breakdown.py \
 
 ```bash
 python applications/generate_feedback.py \
-  --final_dir outputs/alfworld_final \
-  --trajectory_dir data/unified/alfworld \
-  --stage_a_dir outputs/alfworld_stage_a \
-  --output_dir outputs/alfworld_report \
+  --final_dir outputs/trajerrbench_zh_tau2bench_final \
+  --trajectory_dir data/trajerrbench/zh/tau2bench \
+  --stage_a_dir outputs/trajerrbench_zh_tau2bench_stage_a \
+  --output_dir outputs/trajerrbench_zh_tau2bench_report \
   --base_url "$OPENAI_BASE_URL" \
   --model "$DETECTOR_MODEL" \
   --api_key "$OPENAI_API_KEY" \

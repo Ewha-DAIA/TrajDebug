@@ -21,7 +21,7 @@ text) message rows, each repeated 5× (3 × 标注结果 + 1 × 拟合结果 + 1
 
 Output
 ------
-Per-trajectory unified JSON under ``data/unified/tau2bench/<task_id>.json``.
+Per-trajectory unified JSON under the requested output directory.
 Rules:
 
   * Trajectory key: ``juhe``. ``task_id`` is uniquely determined by ``juhe``

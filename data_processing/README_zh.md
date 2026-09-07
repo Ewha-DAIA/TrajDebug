@@ -6,7 +6,7 @@
 
 ## 统一 schema
 
-每个 `data/unified/<dataset>/<task_id>.json` 包含：
+每个 detector-ready 轨迹 JSON 包含：
 
 ```json
 {
@@ -38,17 +38,37 @@
 
 `schema.py` 定义并校验此契约。
 
-## 构建内置数据集
+## 已发布数据与重新构建
+
+仓库中 `data/trajerrbench`、`data/agentdebugbench` 和
+`data/whoandwhen` 下的文件均已转换，可以直接输入 detector。重新构建是
+可选流程，转换脚本不会自动下载上游数据。
+
+如需重建，请在遵守上游条款的前提下自行获取对应版本，并放置为：
+
+```text
+data/sources/
+├── AgentDebugBench/{ALFWorld,GAIA,WebShop}/
+├── Who_and_When/{Hand-Crafted,Algorithm-Generated}/
+└── TrajErrBench/{Tau2Bench,SWEBenchPro}/
+```
+
+也可以显式传入 `--src` 和 `--labels`。默认输出到
+`data/generated/<dataset-key>/`，不会覆盖仓库附带的正式发布数据。
+
+## 构建数据集
 
 从仓库根目录执行：
 
 ```bash
 python -m data_processing.build_unified_dataset --all
-python -m data_processing.build_unified_dataset --dataset tau2bench
-python -m data_processing.build_unified_dataset --dataset swebenchpro
+python -m data_processing.build_unified_dataset --dataset trajerrbench_zh_tau2bench
 ```
 
-已注册键为 `alfworld`、`gaia`、`webshop`、`whoandwhen`、`whoandwhen_algorithm`、`tau2bench`、`swebenchpro`。默认输出到 `data/unified/<dataset>`。
+已注册转换键为 `agentdebugbench_alfworld`、`agentdebugbench_gaia`、
+`agentdebugbench_webshop`、`whoandwhen_handcrafted`、
+`whoandwhen_algorithm_generated`、`trajerrbench_zh_tau2bench` 和
+`trajerrbench_zh_swebenchpro`。
 
 ## 接入新数据集
 
@@ -67,9 +87,9 @@ python -m data_processing.build_unified_dataset --dataset swebenchpro
 python -m data_processing.build_unified_dataset \
   --dataset my_dataset \
   --src data/MyDataset \
-  --out data/unified/my_dataset
+  --out data/generated/my_dataset
 
-DATASETS="my_dataset" DETECTOR_MODEL=your-model bash run_pipeline.sh
+python -m data_processing.validate_dataset --path data/generated/my_dataset
 ```
 
 detector 默认输出到 `outputs`；数据转换过程不会写 detector 输出。

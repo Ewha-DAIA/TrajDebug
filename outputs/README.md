@@ -45,5 +45,5 @@ full-dataset scores reported in the paper.
 To inspect them:
 
 ```bash
-python -m viewer.server --dataset alfworld --output-dir outputs
+python -m viewer.server --dataset trajerrbench_zh_tau2bench --output-dir outputs
 ```

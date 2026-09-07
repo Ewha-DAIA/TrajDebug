@@ -71,12 +71,12 @@ module/subtype confusion matrix.
 Usage::
 
     python detector/score_steps_breakdown.py \\
-        --unified-dir data/unified/webshopsub \\
-        --pred-dir    output-XXX/webshopsub_final \\
-        --stage-b-dir output-XXX/webshopsub_stage_b \\
-        --phase1-dir  output-XXX/webshopsub_phase1 \\
-        --phase2-dir  output-XXX/webshopsub_phase2 \\
-        --out         output-XXX/breakdown_webshop.json
+        --unified-dir data/trajerrbench/zh/tau2bench \\
+        --pred-dir    outputs/trajerrbench_zh_tau2bench_final \\
+        --stage-b-dir outputs/trajerrbench_zh_tau2bench_stage_b \\
+        --phase1-dir  outputs/trajerrbench_zh_tau2bench_phase1 \\
+        --phase2-dir  outputs/trajerrbench_zh_tau2bench_phase2 \\
+        --out         outputs/breakdown_trajerrbench_zh_tau2bench.json
 
 ``--dump-mismatches`` adds per-trajectory records (GT vs pred, Stage B
 flagged steps + on-error-chain steps, failure category) so we can re-read

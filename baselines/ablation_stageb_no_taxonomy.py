@@ -33,7 +33,7 @@ Usage:
 
     python baselines/ablation_stageb_no_taxonomy.py \
         --stage_a_dir <path>/<ds>_stage_a \
-        --trajectory_dir data/unified/<ds> \
+        --trajectory_dir <registered-data-path> \
         --output_dir output-ablation/<ds>_stage_b \
         --base_url <endpoint> \
         --model <name> \

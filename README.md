@@ -4,6 +4,11 @@
 
 **TRAJDEBUG: Tracing Error Lifecycle to Identify Critical Failures in Long-Horizon Agent Trajectories** is an evidence-grounded framework for locating the earliest decisive error responsible for a failed LLM-agent trajectory. This repository provides the detector, unified data adapters, evaluation tools, and a local viewer.
 
+## News
+
+- **2026-09-07:** We released the English edition of TrajErrBench.
+- **2026-08-20:** Our work was accepted to Findings of EMNLP 2026. The paper is available on [arXiv](https://arxiv.org/abs/2608.06346).
+
 ## Method
 
 TRAJDEBUG first builds multi-granularity trajectory views, then performs three
@@ -37,19 +42,31 @@ Copy `.env.example` to `.env`, fill in your endpoint settings, and export them i
 
 ## Data
 
-Detector inputs are one JSON file per trajectory under `data/unified/<dataset>/`. The included evaluation sets are:
+Detector inputs are one unified-schema JSON file per trajectory. Detector-ready
+data is included directly in the repository:
 
 | Dataset key | Trajectories |
 |---|---:|
-| `alfworld` | 100 |
-| `gaia` | 50 |
-| `webshop` | 50 |
-| `whoandwhen` | 58 |
-| `whoandwhen_algorithm` | 126 |
-| `tau2bench` | 400 |
-| `swebenchpro` | 86 |
+| `agentdebugbench_alfworld` | 100 |
+| `agentdebugbench_gaia` | 50 |
+| `agentdebugbench_webshop` | 50 |
+| `whoandwhen_handcrafted` | 58 |
+| `whoandwhen_algorithm_generated` | 126 |
+| `trajerrbench_zh_tau2bench` | 400 |
+| `trajerrbench_zh_swebenchpro` | 86 |
+| `trajerrbench_en_tau2bench` | 400 |
+| `trajerrbench_en_swebenchpro` | 86 |
 
-The **TRAJERRBENCH** dataset introduced in the paper is released in this repository as [`data/unified/tau2bench`](data/unified/tau2bench) (400 τ²-Bench failed trajectories) and [`data/unified/swebenchpro`](data/unified/swebenchpro) (86 SWE-Bench Pro failed trajectories). Build registered datasets with:
+We release our **TrajErrBench** dataset under
+[`data/trajerrbench`](data/trajerrbench), grouped by language and source
+benchmark. Our paper uses the Chinese (`zh`) edition; we have also recently
+released a paired English (`en`) edition with the same task IDs and
+critical-error labels. AgentDebugBench and Who&When evaluation subsets are grouped under
+[`data/agentdebugbench`](data/agentdebugbench) and
+[`data/whoandwhen`](data/whoandwhen).
+
+The included JSON files can be used directly. To rebuild data from separately
+obtained upstream sources:
 
 ```bash
 python -m data_processing.build_unified_dataset --all
@@ -95,14 +112,19 @@ bash run_pipeline.sh
 DETECTOR_MODEL=your-model bash run_pipeline.sh
 
 # Select datasets or tune concurrency:
-DATASETS="tau2bench swebenchpro" \
+DATASETS="trajerrbench_zh_tau2bench" \
 FILE_CONCURRENCY=2 \
 LLM_CONCURRENCY=8 \
 DETECTOR_MODEL=your-model \
 bash run_pipeline.sh
 ```
 
-Inputs default to `data/unified`; outputs default to `outputs`. Each run produces `<dataset>_stage_a`, `<dataset>_stage_b`, `<dataset>_phase1`, `<dataset>_phase2`, `<dataset>_final`, and `score_<dataset>.json`. See [`outputs/README.md`](outputs/README.md) for the directory convention, recommended reading order, and ten sampled examples per paper dataset.
+Dataset keys are resolved through `data_processing/dataset_registry.py`;
+outputs default to `outputs`. Each run produces `<dataset>_stage_a`,
+`<dataset>_stage_b`, `<dataset>_phase1`, `<dataset>_phase2`,
+`<dataset>_final`, and `score_<dataset>.json`. Validate dataset discovery and
+all input schemas without making API calls with
+`VALIDATE_ONLY=1 bash run_pipeline.sh`.
 
 ## Evaluation
 
@@ -110,9 +132,9 @@ Inputs default to `data/unified`; outputs default to `outputs`. Each run produce
 
 ```bash
 python detector/score_steps.py \
-  --unified-dir data/unified/alfworld \
-  --pred-dir outputs/alfworld_final \
-  --out outputs/score_alfworld.json
+  --unified-dir data/trajerrbench/zh/tau2bench \
+  --pred-dir outputs/trajerrbench_zh_tau2bench_final \
+  --out outputs/score_trajerrbench_zh_tau2bench.json
 ```
 
 ## Feedback generation
@@ -121,10 +143,10 @@ The identified critical error step can be converted into actionable feedback to 
 
 ```bash
 python applications/generate_feedback.py \
-  --final_dir outputs/alfworld_final \
-  --trajectory_dir data/unified/alfworld \
-  --stage_a_dir outputs/alfworld_stage_a \
-  --output_dir outputs/alfworld_report \
+  --final_dir outputs/trajerrbench_zh_tau2bench_final \
+  --trajectory_dir data/trajerrbench/zh/tau2bench \
+  --stage_a_dir outputs/trajerrbench_zh_tau2bench_stage_a \
+  --output_dir outputs/trajerrbench_zh_tau2bench_report \
   --base_url "$OPENAI_BASE_URL" \
   --model "$DETECTOR_MODEL" \
   --api_key "$OPENAI_API_KEY" \
@@ -136,14 +158,23 @@ The generated feedback is available in `outputs/<dataset>_report/<task_id>_repor
 ## Viewer
 
 ```bash
-python -m viewer.server --dataset alfworld --output-dir outputs
+python -m viewer.server --dataset trajerrbench_zh_tau2bench --output-dir outputs
 ```
 
 Open <http://localhost:8000>. See [`viewer/README.md`](viewer/README.md).
 
 ## Citation
 
-If you use TRAJDEBUG, please cite the paper. Author and repository metadata are provided in [`CITATION.cff`](CITATION.cff).
+If you use TRAJDEBUG or TrajErrBench, please cite our paper:
+
+```bibtex
+@article{qi2026trajdebug,
+  title={TRAJDEBUG: Tracing Error Lifecycle to Identify Critical Failures in Long-Horizon Agent Trajectories},
+  author={Qi, Yunjia and Yin, Zehua and Shi, Xintong and Peng, Hao and Lu, Songyuanyi and Liu, Yixian and Xuan, Richeng and Liu, Yuhong and Hu, Zhichao and Wang, Xiaozhi and others},
+  journal={arXiv preprint arXiv:2608.06346},
+  year={2026}
+}
+```
 
 ## License
 

@@ -1,0 +1,220 @@
+{
+  "messages": [
+    {
+      "step": 0,
+      "role": "system",
+      "content": "# Airline Agent Policy\n\nThe current time is 2024-05-15 15:00:00 EST.\n\nAs an airline agent, you can help users **book**, **modify**, or **cancel** flight reservations. You also handle **refunds and compensation**.\n\nBefore taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\n\nYou should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain Basic\n\n### User\nEach user has a profile containing:\n- user id\n- email\n- addresses\n- date of birth\n- payment methods\n- membership level\n- reservation numbers\n\nThere are three types of payment methods: **credit card**, **gift card**, **travel certificate**.\n\nThere are three membership levels: **regular**, **silver**, **gold**.\n\n### Flight\nEach flight has the following attributes:\n- flight number\n- origin\n- destination\n- scheduled departure and arrival time (local time)\n\nA flight can be available at multiple dates. For each date:\n- If the status is **available**, the flight has not taken off, available seats and prices are listed.\n- If the status is **delayed** or **on time**, the flight has not taken off, cannot be booked.\n- If the status is **flying**, the flight has taken off but not landed, cannot be booked.\n\nThere are three cabin classes: **basic economy**, **economy**, **business**. **basic economy** is its own class, completely distinct from **economy**.\n\nSeat availability and prices are listed for each cabin class.\n\n### Reservation\nEach reservation specifies the following:\n- reservation id\n- user id\n- trip type\n- flights\n- passengers\n- payment methods\n- created time\n- baggages\n- travel insurance information\n\nThere are two types of trip: **one way** and **round trip**.\n\n## Book flight\n\nThe agent must first obtain the user id from the user. \n\nThe agent should then ask for the trip type, origin, destination.\n\nCabin:\n- Cabin class must be the same across all the flights in a reservation. \n\nPassengers: \n- Each reservation can have at most five passengers. \n- The agent needs to collect the first name, last name, and date of birth for each passenger. \n- All passengers must fly the same flights in the same cabin.\n\nPayment: \n- Each reservation can use at most one travel certificate, at most one credit card, and at most three gift cards. \n- The remaining amount of a travel certificate is not refundable. \n- All payment methods must already be in user profile for safety reasons.\n\nChecked bag allowance: \n- If the booking user is a regular member:\n  - 0 free checked bag for each basic economy passenger\n  - 1 free checked bag for each economy passenger\n  - 2 free checked bags for each business passenger\n- If the booking user is a silver member:\n  - 1 free checked bag for each basic economy passenger\n  - 2 free checked bag for each economy passenger\n  - 3 free checked bags for each business passenger\n- If the booking user is a gold member:\n  - 2 free checked bag for each basic economy passenger\n  - 3 free checked bag for each economy passenger\n  - 4 free checked bags for each business passenger\n- Each extra baggage is 50 dollars.\n\nDo not add checked bags that the user does not need.\n\nTravel insurance: \n- The agent should ask if the user wants to buy the travel insurance.\n- The travel insurance is 30 dollars per passenger and enables full refund if the user needs to cancel the flight given health or weather reasons.\n\n## Modify flight\n\nFirst, the agent must obtain the user id and reservation id. \n- The user must provide their user id. \n- If the user doesn't know their reservation id, the agent should help locate it using available tools.\n\nChange flights: \n- Basic economy flights cannot be modified.\n- Other reservations can be modified without changing the origin, destination, and trip type.\n- Some flight segments can be kept, but their prices will not be updated based on the current price.\n- The API does not check these for the agent, so the agent must make sure the rules apply before calling the API!\n\nChange cabin: \n- Cabin cannot be changed if any flight in the reservation has already been flown.\n- In other cases, all reservations, including basic economy, can change cabin without changing the flights.\n- Cabin class must remain the same across all the flights in the same reservation; changing cabin for just one flight segment is not possible.\n- If the price after cabin change is higher than the original price, the user is required to pay for the difference.\n- If the price after cabin change is lower than the original price, the user is should be refunded the difference.\n\nChange baggage and insurance: \n- The user can add but not remove checked bags.\n- The user cannot add insurance after initial booking.\n\nChange passengers:\n- The user can modify passengers but cannot modify the number of passengers.\n- Even a human agent cannot modify the number of passengers.\n\nPayment: \n- If the flights are changed, the user needs to provide a single gift card or credit card for payment or refund method. The payment method must already be in user profile for safety reasons.\n\n## Cancel flight\n\nFirst, the agent must obtain the user id and reservation id. \n- The user must provide their user id. \n- If the user doesn't know their reservation id, the agent should help locate it using available tools.\n\nThe agent must also obtain the reason for cancellation (change of plan, airline cancelled flight, or other reasons)\n\nIf any portion of the flight has already been flown, the agent cannot help and transfer is needed.\n\nOtherwise, flight can be cancelled if any of the following is true:\n- The booking was made within the last 24 hrs\n- The flight is cancelled by airline\n- It is a business flight\n- The user has travel insurance and the reason for cancellation is covered by insurance.\n\nThe API does not check that cancellation rules are met, so the agent must make sure the rules apply before calling the API!\n\nRefund:\n- The refund will go to original payment methods within 5 to 7 business days.\n\n## Refunds and Compensation\nDo not proactively offer a compensation unless the user explicitly asks for one.\n\nDo not compensate if the user is regular member and has no travel insurance and flies (basic) economy.\n\nAlways confirms the facts before offering compensation.\n\nOnly compensate if the user is a silver/gold member or has travel insurance or flies business.\n\n- If the user complains about cancelled flights in a reservation, the agent can offer a certificate as a gesture after confirming the facts, with the amount being $100 times the number of passengers.\n\n- If the user complains about delayed flights in a reservation and wants to change or cancel the reservation, the agent can offer a certificate as a gesture after confirming the facts and changing or cancelling the reservation, with the amount being $50 times the number of passengers.\n\nDo not offer compensation for any other reason than the ones listed above.",
+      "name": "system",
+      "judgable": false,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 1,
+      "role": "assistant",
+      "content": "Hi! How can I help you today?",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 2,
+      "role": "user",
+      "content": "Hi, I need to talk to someone about a flight cancellation that happened earlier this month. It messed up my entire schedule and caused me to miss a crucial business meeting. I want to know what kind of compensation you’re going to provide for all the inconvenience and for missing that meeting.",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 3,
+      "role": "assistant",
+      "content": "I’m sorry for the disruption this caused. I can review your trip and, if eligible, arrange a travel certificate as a goodwill gesture for an airline‑caused cancellation.\n\nTo proceed, please provide:\n- Your user ID\n- The reservation ID for the affected trip (if you don’t have it, share the flight number, route, and date)\n- Confirmation that the flight was cancelled by the airline (I’ll verify on my end as well)\n\nWith your permission, I’ll check your reservation, membership/insurance/business fare eligibility, and the number of passengers, then confirm the compensation we can issue.",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 4,
+      "role": "user",
+      "content": "My user ID is sophia_silva_7557. I don’t have the reservation ID right now, but the flight was from New York to London, earlier this month—I think on the 3rd. It was definitely canceled by the airline, not me.\n\nLook, I understand you might want to issue some basic travel certificate or voucher, but that’s really not enough given what happened. I missed a major business meeting because you canceled my flight at the last minute. I expect proper compensation for both the lost business opportunity and all the hassle you caused. Can you actually help with that, or do I need to escalate this further?",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 5,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_user_details({\"user_id\": \"sophia_silva_7557\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 6,
+      "role": "tool",
+      "content": "{\"user_id\": \"sophia_silva_7557\", \"name\": {\"first_name\": \"Sophia\", \"last_name\": \"Silva\"}, \"address\": {\"address1\": \"141 Cedar Avenue\", \"address2\": \"Suite 436\", \"city\": \"Columbus\", \"country\": \"USA\", \"state\": \"OH\", \"zip\": \"43282\"}, \"email\": \"sophia.silva5929@example.com\", \"dob\": \"1957-10-05\", \"payment_methods\": {\"certificate_8045380\": {\"source\": \"certificate\", \"id\": \"certificate_8045380\", \"amount\": 500.0}, \"certificate_3887113\": {\"source\": \"certificate\", \"id\": \"certificate_3887113\", \"amount\": 150.0}, \"credit_card_4196779\": {\"source\": \"credit_card\", \"id\": \"credit_card_4196779\", \"brand\": \"visa\", \"last_four\": \"7238\"}, \"gift_card_5094406\": {\"source\": \"gift_card\", \"id\": \"gift_card_5094406\", \"amount\": 274.0}}, \"saved_passengers\": [{\"first_name\": \"Yara\", \"last_name\": \"Silva\", \"dob\": \"1972-06-16\"}, {\"first_name\": \"Isabella\", \"last_name\": \"Moore\", \"dob\": \"1988-06-04\"}], \"membership\": \"regular\", \"reservations\": [\"NM1VX1\", \"KC18K6\", \"S61CZX\", \"H8Q05L\", \"WUNA5K\"]}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 7,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_reservation_details({\"reservation_id\": \"NM1VX1\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 8,
+      "role": "tool",
+      "content": "{\"reservation_id\": \"NM1VX1\", \"user_id\": \"sophia_silva_7557\", \"origin\": \"MSP\", \"destination\": \"EWR\", \"flight_type\": \"round_trip\", \"cabin\": \"basic_economy\", \"flights\": [{\"flight_number\": \"HAT300\", \"origin\": \"MSP\", \"destination\": \"EWR\", \"date\": \"2024-05-25\", \"price\": 100}, {\"flight_number\": \"HAT208\", \"origin\": \"EWR\", \"destination\": \"MSP\", \"date\": \"2024-05-27\", \"price\": 53}], \"passengers\": [{\"first_name\": \"Yara\", \"last_name\": \"Silva\", \"dob\": \"1972-06-16\"}], \"payment_history\": [{\"payment_id\": \"gift_card_5094406\", \"amount\": 183}], \"created_at\": \"2024-05-03T08:46:43\", \"total_baggages\": 0, \"nonfree_baggages\": 0, \"insurance\": \"yes\", \"status\": null}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 9,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_reservation_details({\"reservation_id\": \"KC18K6\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 10,
+      "role": "tool",
+      "content": "{\"reservation_id\": \"KC18K6\", \"user_id\": \"sophia_silva_7557\", \"origin\": \"MSP\", \"destination\": \"CLT\", \"flight_type\": \"one_way\", \"cabin\": \"basic_economy\", \"flights\": [{\"flight_number\": \"HAT300\", \"origin\": \"MSP\", \"destination\": \"EWR\", \"date\": \"2024-05-21\", \"price\": 55}, {\"flight_number\": \"HAT215\", \"origin\": \"EWR\", \"destination\": \"CLT\", \"date\": \"2024-05-21\", \"price\": 51}], \"passengers\": [{\"first_name\": \"Sophia\", \"last_name\": \"Silva\", \"dob\": \"1957-10-05\"}], \"payment_history\": [{\"payment_id\": \"credit_card_4196779\", \"amount\": 136}], \"created_at\": \"2024-05-04T14:07:11\", \"total_baggages\": 0, \"nonfree_baggages\": 0, \"insurance\": \"yes\", \"status\": null}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 11,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_reservation_details({\"reservation_id\": \"S61CZX\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 12,
+      "role": "tool",
+      "content": "{\"reservation_id\": \"S61CZX\", \"user_id\": \"sophia_silva_7557\", \"origin\": \"LAX\", \"destination\": \"CLT\", \"flight_type\": \"round_trip\", \"cabin\": \"economy\", \"flights\": [{\"flight_number\": \"HAT228\", \"origin\": \"LAX\", \"destination\": \"EWR\", \"date\": \"2024-05-23\", \"price\": 131}, {\"flight_number\": \"HAT043\", \"origin\": \"EWR\", \"destination\": \"CLT\", \"date\": \"2024-05-24\", \"price\": 163}, {\"flight_number\": \"HAT157\", \"origin\": \"CLT\", \"destination\": \"EWR\", \"date\": \"2024-05-24\", \"price\": 157}, {\"flight_number\": \"HAT041\", \"origin\": \"EWR\", \"destination\": \"LAX\", \"date\": \"2024-05-25\", \"price\": 186}], \"passengers\": [{\"first_name\": \"Harper\", \"last_name\": \"Jackson\", \"dob\": \"1974-09-05\"}], \"payment_history\": [{\"payment_id\": \"credit_card_4196779\", \"amount\": 667}], \"created_at\": \"2024-05-02T04:38:01\", \"total_baggages\": 1, \"nonfree_baggages\": 0, \"insurance\": \"yes\", \"status\": null}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 13,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_reservation_details({\"reservation_id\": \"H8Q05L\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 14,
+      "role": "tool",
+      "content": "{\"reservation_id\": \"H8Q05L\", \"user_id\": \"sophia_silva_7557\", \"origin\": \"JFK\", \"destination\": \"ATL\", \"flight_type\": \"one_way\", \"cabin\": \"basic_economy\", \"flights\": [{\"flight_number\": \"HAT268\", \"origin\": \"JFK\", \"destination\": \"ATL\", \"date\": \"2024-05-24\", \"price\": 74}], \"passengers\": [{\"first_name\": \"Harper\", \"last_name\": \"Kovacs\", \"dob\": \"1973-10-26\"}], \"payment_history\": [{\"payment_id\": \"credit_card_4196779\", \"amount\": 104}], \"created_at\": \"2024-05-03T15:12:00\", \"total_baggages\": 0, \"nonfree_baggages\": 0, \"insurance\": \"yes\", \"status\": null}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 15,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_reservation_details({\"reservation_id\": \"WUNA5K\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 16,
+      "role": "tool",
+      "content": "{\"reservation_id\": \"WUNA5K\", \"user_id\": \"sophia_silva_7557\", \"origin\": \"ORD\", \"destination\": \"PHL\", \"flight_type\": \"round_trip\", \"cabin\": \"economy\", \"flights\": [{\"flight_number\": \"HAT271\", \"origin\": \"ORD\", \"destination\": \"PHL\", \"date\": \"2024-05-10\", \"price\": 160}, {\"flight_number\": \"HAT197\", \"origin\": \"PHL\", \"destination\": \"ORD\", \"date\": \"2024-05-11\", \"price\": 100}], \"passengers\": [{\"first_name\": \"Sophia\", \"last_name\": \"Silva\", \"dob\": \"1957-10-05\"}], \"payment_history\": [{\"payment_id\": \"gift_card_5094406\", \"amount\": 260}], \"created_at\": \"2024-05-08T19:01:02\", \"total_baggages\": 1, \"nonfree_baggages\": 0, \"insurance\": \"no\", \"status\": null}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 17,
+      "role": "assistant",
+      "content": "Thanks for the details. I can help, but I want to set clear expectations.\n\n- For airline‑caused cancellations, the goodwill compensation we can provide is a travel certificate. We’re not able to compensate for consequential losses (e.g., missed meetings).\n- I can issue a certificate only if at least one of these is true: you’re a silver/gold member, you had travel insurance on that trip, or the ticket was in business class.\n- The amount, if eligible, is $100 per passenger, after I confirm the cancellation and the reservation details.\n\nTo locate and verify the trip you mentioned (NY to London, May 3), please confirm:\n- Exact airports (JFK or EWR, and LHR or LGW) and the exact departure date/time if you have it.\n- Number of passengers and their names on that reservation.\n- Whether that ticket was business class, or if you purchased travel insurance for that trip.\n- Was it booked under this account (sophia_silva_7557) or a different account/email?\n\nOnce I have this, I’ll verify the cancellation and your eligibility, calculate the certificate amount, and ask for your confirmation to issue it. If you need compensation beyond what I’m authorized to provide, I can escalate to a human agent after we verify the trip.",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 18,
+      "role": "user",
+      "content": "This is incredibly frustrating. The flight was JFK to LHR, departing on May 3rd in the evening—I think around 7 or 8pm. Only I was traveling, and the booking was made under my account, sophia_silva_7557.\n\nI did book a business class ticket, and as I said before, missing that meeting has cost me a lot. I genuinely need compensation that reflects how disruptive this was: the travel certificate honestly isn’t enough. I want something to cover what I actually lost—are you telling me there’s no way at all to receive more appropriate compensation from the airline for the consequences?",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 19,
+      "role": "assistant",
+      "content": "I understand how disruptive this was, and I’m sorry it caused you to miss an important meeting. Within what I’m authorized to do, I can issue a goodwill travel certificate for airline‑caused cancellations. We’re not able to compensate for consequential losses (missed meetings, lost business) beyond that.\n\nHere’s what I can do next:\n- Verify the cancellation and the booking details.\n- If confirmed and the ticket was business class as you stated, issue a $100 travel certificate (1 passenger).\n\nI’m not finding a JFK–LHR reservation under your account right now. To locate and verify it, please provide one of the following:\n- The flight number and exact date (e.g., HAT123 on 2024-05-03)\n- The reservation ID\n- Confirmation if it might have been booked via a different account, email, or a travel agency/codeshare\n\nOnce verified, I’ll summarize the certificate details and ask for your confirmation to issue it.\n\nIf you want to pursue compensation beyond what I’m authorized to offer, say “Transfer me to a human agent,” and I’ll escalate after we identify the correct trip.",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 20,
+      "role": "user",
+      "content": "This really isn’t acceptable. I paid for business class on that flight and missed out on a major deal because you canceled at the last minute. It's not just about a voucher—it's about compensating for what your actions cost me.\n\nIf you can't help me any further, then yes, I want you to transfer me to someone who actually has the authority to give proper compensation for everything I lost due to your cancellation. Please escalate this right now.",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 21,
+      "role": "assistant",
+      "content": "[tool_calls]\n- transfer_to_human_agents({\"summary\": \"User ID: sophia_silva_7557. User reports airline-caused cancellation of a JFK→LHR business-class flight on 2024-05-03 evening (approx. 7–8pm). Only one passenger (Sophia). She missed a crucial business meeting and requests compensation beyond a goodwill travel certificate, including consequential losses. I cannot locate a matching JFK–LHR reservation under her account; may involve codeshare, different booking channel, or different record locator. User explicitly requests escalation to someone with authority to provide compensation beyond standard certificate.\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 22,
+      "role": "tool",
+      "content": "Transfer successful",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 23,
+      "role": "assistant",
+      "content": "YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 24,
+      "role": "user",
+      "content": "###TRANSFER###",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    }
+  ],
+  "metadata": {
+    "dataset": "trajerrbench",
+    "task_id": "airline_failed_gpt-5::76889fc3-a099-4337-bcc2-1d0af11f6a1c",
+    "task_description": "Hi, I need to talk to someone about a flight cancellation that happened earlier this month. It messed up my entire schedule and caused me to miss a crucial business meeting. I want to know what kind of compensation you’re going to provide for all the inconvenience and for missing that meeting.",
+    "reward": 0,
+    "annotation": {
+      "critical_error_step": 17,
+      "critical_error_type": "obs.IgnoreOutput"
+    },
+    "extra": {
+      "agent_framework_description": "A user interacts with a single `assistant` that must follow the scene policy shown in the leading `system` message while executing the user's request. `tool` messages are tool-call return values. Critical errors can only be attributed to an `assistant` step; `user` and `tool` steps are never the critical step. The assistant should try to fulfil the user's request as much as possible, but the user may make unreasonable or out-of-policy requests; whenever the user's request conflicts with the `system` policy, the `system` policy takes precedence and the assistant must refuse or redirect rather than comply.\n\nDATASET NOTES (tau²-bench). The leading `system` message lists binding procedural rules using \"必须\" / \"must\" / \"before X you must Y\" / \"only ... if\" / \"never\". These rules are hard constraints on every assistant step that touches the database (booking, modifying, cancelling, refunding, returning) — typical examples include verifying user identity (email lookup, name+zip) before any account-data operation. When the user refers to a target object indirectly (\"my recent order\", \"the items I want to cancel\") and the prior `tool` outputs visibly enumerate multiple candidate objects under that user (multiple `orders`, multiple `reservations`, multiple membership tiers), the candidate set is fully visible — picking one to act on is a substantive commitment, not a probe; the tool response for that one candidate yields no information about the others, so it is not self-correcting on the next turn. The system policy also constrains the option space the assistant may offer the user (e.g. cancellation may be whole-order-only; modification may be limited to same-product-type variants). When the assistant presents a procedural option to the user (\"you can return only this item\", \"you can wait until delivery and then return\", \"I can split the cancellation\"), that option must be authorised either by the system policy verbatim or by a prior tool result for the specific object — even if the assistant is only presenting choices and not yet executing, presenting an option the assistant has not verified to be permitted commits the assistant to a path that may be unworkable, and the user may rely on the option as if it were available.",
+      "language": "en",
+      "source_benchmark": "tau2bench",
+      "pair_id": "tau2bench:airline_failed_gpt-5::76889fc3-a099-4337-bcc2-1d0af11f6a1c"
+    }
+  }
+}

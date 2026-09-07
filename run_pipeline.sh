@@ -6,8 +6,8 @@
 # Optional:
 #   OPENAI_API_KEY / DETECTOR_API_KEY
 #   OPENAI_BASE_URL / DETECTOR_BASE_URL (default: https://api.openai.com/v1)
-#   DATASETS="alfworld gaia webshop ..."
-#   UNIFIED_ROOT=data/unified OUTPUT_ROOT=outputs
+#   DATASETS="trajerrbench_zh_tau2bench"
+#   OUTPUT_ROOT=outputs
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -16,7 +16,6 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 BASE_URL="${DETECTOR_BASE_URL:-${OPENAI_BASE_URL:-https://api.openai.com/v1}}"
 API_KEY="${DETECTOR_API_KEY:-${OPENAI_API_KEY:-EMPTY}}"
 MODEL="${DETECTOR_MODEL:-}"
-UNIFIED_ROOT="${UNIFIED_ROOT:-data/unified}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-outputs}"
 CACHE_ROOT="${CACHE_ROOT:-.cache/trajdebug}"
 TEMPERATURE="${TEMPERATURE:-0.0}"
@@ -24,9 +23,10 @@ MAX_TOKENS="${MAX_TOKENS:-32768}"
 FILE_CONCURRENCY="${FILE_CONCURRENCY:-4}"
 LLM_CONCURRENCY="${LLM_CONCURRENCY:-8}"
 TOP_K="${TOP_K:-5}"
-read -r -a DATASET_LIST <<< "${DATASETS:-alfworld gaia webshop whoandwhen whoandwhen_algorithm tau2bench swebenchpro}"
+VALIDATE_ONLY="${VALIDATE_ONLY:-0}"
+read -r -a DATASET_LIST <<< "${DATASETS:-agentdebugbench_alfworld agentdebugbench_gaia agentdebugbench_webshop whoandwhen_handcrafted whoandwhen_algorithm_generated trajerrbench_zh_tau2bench trajerrbench_zh_swebenchpro trajerrbench_en_tau2bench trajerrbench_en_swebenchpro}"
 
-if [[ -z "$MODEL" ]]; then
+if [[ "$VALIDATE_ONLY" != "1" && -z "$MODEL" ]]; then
   echo "DETECTOR_MODEL is required." >&2
   echo "Example: DETECTOR_MODEL=gpt-4.1-mini OPENAI_API_KEY=... bash run_pipeline.sh" >&2
   exit 2
@@ -40,10 +40,15 @@ echo "  model:    $MODEL"
 echo "  datasets: ${DATASET_LIST[*]}"
 echo "  outputs:  $OUTPUT_ROOT"
 
-for dataset in "${DATASET_LIST[@]}"; do
-  input_dir="$UNIFIED_ROOT/$dataset"
+for requested_dataset in "${DATASET_LIST[@]}"; do
+  dataset="$("$PYTHON_BIN" -m data_processing.dataset_registry "$requested_dataset" --field key)"
+  input_dir="$("$PYTHON_BIN" -m data_processing.dataset_registry "$requested_dataset" --field path)"
   if [[ ! -d "$input_dir" ]]; then
     echo "[$dataset] skipped: missing $input_dir" >&2
+    continue
+  fi
+  if [[ "$VALIDATE_ONLY" == "1" ]]; then
+    "$PYTHON_BIN" -m data_processing.validate_dataset --dataset "$dataset"
     continue
   fi
 
@@ -99,4 +104,8 @@ for dataset in "${DATASET_LIST[@]}"; do
     --out "$OUTPUT_ROOT/score_${dataset}.json"
 done
 
-echo "Done. Results are under $OUTPUT_ROOT/."
+if [[ "$VALIDATE_ONLY" == "1" ]]; then
+  echo "Done. All registered trajectory inputs are valid."
+else
+  echo "Done. Results are under $OUTPUT_ROOT/."
+fi

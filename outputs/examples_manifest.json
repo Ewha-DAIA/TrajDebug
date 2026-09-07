@@ -2,7 +2,7 @@
   "seed": 20260805,
   "selection_method": "In dataset order, derive one 64-bit sub-seed with Python random.Random(seed).getrandbits(64). Sort candidates by task_id; candidates must have both unified and final JSON. Using random.Random(sub_seed), sample 2 exact-correct tasks, then sample 8 from remaining candidates; sort the resulting 10 task_ids. Exact correctness follows detector/score_steps.py default unified source: reward != 1, integer GT metadata.annotation.critical_error_step, and integer final critical_error.unified_critical_step (falling back to critical_step) equal to GT.",
   "datasets": {
-    "alfworld": {
+    "agentdebugbench_alfworld": {
       "sub_seed": 13516149442904834451,
       "tasks": [
         {
@@ -75,7 +75,7 @@
         "report": 10
       }
     },
-    "gaia": {
+    "agentdebugbench_gaia": {
       "sub_seed": 17601733176490625211,
       "tasks": [
         {
@@ -148,7 +148,7 @@
         "report": 10
       }
     },
-    "webshop": {
+    "agentdebugbench_webshop": {
       "sub_seed": 15093049273854418147,
       "tasks": [
         {
@@ -221,7 +221,7 @@
         "report": 10
       }
     },
-    "whoandwhen": {
+    "whoandwhen_handcrafted": {
       "sub_seed": 13745988598011174356,
       "tasks": [
         {
@@ -294,7 +294,7 @@
         "report": 10
       }
     },
-    "whoandwhen_algorithm": {
+    "whoandwhen_algorithm_generated": {
       "sub_seed": 10050479569370324381,
       "tasks": [
         {
@@ -367,7 +367,7 @@
         "report": 10
       }
     },
-    "tau2bench": {
+    "trajerrbench_zh_tau2bench": {
       "sub_seed": 13997484249950252159,
       "tasks": [
         {
@@ -440,7 +440,7 @@
         "report": 10
       }
     },
-    "swebenchpro": {
+    "trajerrbench_zh_swebenchpro": {
       "sub_seed": 13145760030794461855,
       "tasks": [
         {

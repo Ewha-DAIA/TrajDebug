@@ -1,0 +1,220 @@
+{
+  "messages": [
+    {
+      "step": 0,
+      "role": "system",
+      "content": "# Retail agent policy\n\nAs a retail agent, you can help users:\n\n- **cancel or modify pending orders**\n- **return or exchange delivered orders**\n- **modify their default user address**\n- **provide information about their own profile, orders, and related products**\n\nAt the beginning of the conversation, you have to authenticate the user identity by locating their user id via email, or via name + zip code. This has to be done even when the user already provides the user id.\n\nOnce the user has been authenticated, you can provide the user with information about order, product, profile information, e.g. help the user look up order id.\n\nYou can only help one user per conversation (but you can handle multiple requests from the same user), and must deny any requests for tasks related to any other user.\n\nBefore taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not make up any information or knowledge or procedures not provided by the user or the tools, or give subjective recommendations or comments.\n\nYou should at most make one tool call at a time, and if you take a tool call, you should not respond to the user at the same time. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain basic\n\n- All times in the database are EST and 24 hour based. For example \"02:30:00\" means 2:30 AM EST.\n\n### User\n\nEach user has a profile containing:\n\n- unique user id\n- email\n- default address\n- payment methods.\n\nThere are three types of payment methods: **gift card**, **paypal account**, **credit card**.\n\n### Product\n\nOur retail store has 50 types of products.\n\nFor each **type of product**, there are **variant items** of different **options**.\n\nFor example, for a 't-shirt' product, there could be a variant item with option 'color blue size M', and another variant item with option 'color red size L'.\n\nEach product has the following attributes:\n\n- unique product id\n- name\n- list of variants\n\nEach variant item has the following attributes:\n\n- unique item id\n- information about the value of the product options for this item.\n- availability\n- price\n\nNote: Product ID and Item ID have no relations and should not be confused!\n\n### Order\n\nEach order has the following attributes:\n\n- unique order id\n- user id\n- address\n- items ordered\n- status\n- fullfilments info (tracking id and item ids)\n- payment history\n\nThe status of an order can be: **pending**, **processed**, **delivered**, or **cancelled**.\n\nOrders can have other optional attributes based on the actions that have been taken (cancellation reason, which items have been exchanged, what was the exchane price difference etc)\n\n## Generic action rules\n\nGenerally, you can only take action on pending or delivered orders.\n\nExchange or modify order tools can only be called once per order. Be sure that all items to be changed are collected into a list before making the tool call!!!\n\n## Cancel pending order\n\nAn order can only be cancelled if its status is 'pending', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the reason (either 'no longer needed' or 'ordered by mistake') for cancellation. Other reasons are not acceptable.\n\nAfter user confirmation, the order status will be changed to 'cancelled', and the total will be refunded via the original payment method immediately if it is gift card, otherwise in 5 to 7 business days.\n\n## Modify pending order\n\nAn order can only be modified if its status is 'pending', and you should check its status before taking the action.\n\nFor a pending order, you can take actions to modify its shipping address, payment method, or product item options, but nothing else.\n\n### Modify payment\n\nThe user can only choose a single payment method different from the original payment method.\n\nIf the user wants the modify the payment method to gift card, it must have enough balance to cover the total amount.\n\nAfter user confirmation, the order status will be kept as 'pending'. The original payment method will be refunded immediately if it is a gift card, otherwise it will be refunded within 5 to 7 business days.\n\n### Modify items\n\nThis action can only be called once, and will change the order status to 'pending (items modifed)'. The agent will not be able to modify or cancel the order anymore. So you must confirm all the details are correct and be cautious before taking this action. In particular, remember to remind the customer to confirm they have provided all the items they want to modify.\n\nFor a pending order, each item can be modified to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\n## Return delivered order\n\nAn order can only be returned if its status is 'delivered', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the list of items to be returned.\n\nThe user needs to provide a payment method to receive the refund.\n\nThe refund must either go to the original payment method, or an existing gift card.\n\nAfter user confirmation, the order status will be changed to 'return requested', and the user will receive an email regarding how to return items.\n\n## Exchange delivered order\n\nAn order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.\n\nFor a delivered order, each item can be exchanged to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\nAfter user confirmation, the order status will be changed to 'exchange requested', and the user will receive an email regarding how to return items. There is no need to place a new order.\n",
+      "name": "system",
+      "judgable": false,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 1,
+      "role": "assistant",
+      "content": "Hi! How can I help you today?",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 2,
+      "role": "user",
+      "content": "Hi, I need some help with a few recent purchases. I just bought two skateboards, and honestly, I'm pretty upset with their quality. I'd like to arrange a return for them and get my money refunded back to my credit card. Can you assist me with that?",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 3,
+      "role": "assistant",
+      "content": "To get started, I need to verify your account and locate the order.\n\n- What’s the email on your account? (If you don’t recall it, please provide your first and last name plus your ZIP code.)\n- Do you have the order ID(s) for the skateboards, and were they delivered already?\n- Were both skateboards in the same order, or separate orders?\n\nNote: Refunds must go back to the original payment method on the order, or to an existing gift card. If the original payment was a credit card, we’ll refund to that card. Once I find the order and items, I’ll summarize the return details and ask for your confirmation before submitting the return request.",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 4,
+      "role": "user",
+      "content": "I actually don’t remember which email I used for this account, but my name is Mei Ahmed and my zip code is 78705. \n\nI don’t have the order IDs handy, but both skateboards were delivered together in the same order, just a few days ago. I paid with my credit card.\n\nBy the way, before we proceed, I also have a smart watch and an e-reader from my recent purchases that I’m considering returning. Can you look up those items too? I’m interested in returning the smart watch, and for the e-reader, I’m open to exchanging it if the same one is available online—otherwise, I’d like to return that for a refund as well.",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 5,
+      "role": "assistant",
+      "content": "[tool_calls]\n- find_user_id_by_name_zip({\"first_name\": \"Mei\", \"last_name\": \"Ahmed\", \"zip\": \"78705\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 6,
+      "role": "tool",
+      "content": "mei_ahmed_4909",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 7,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_user_details({\"user_id\": \"mei_ahmed_4909\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 8,
+      "role": "tool",
+      "content": "{\"user_id\": \"mei_ahmed_4909\", \"name\": {\"first_name\": \"Mei\", \"last_name\": \"Ahmed\"}, \"address\": {\"address1\": \"572 Cedar Street\", \"address2\": \"Suite 469\", \"city\": \"Austin\", \"country\": \"USA\", \"state\": \"TX\", \"zip\": \"78705\"}, \"email\": \"mei.ahmed4901@example.com\", \"payment_methods\": {\"credit_card_5902940\": {\"source\": \"credit_card\", \"id\": \"credit_card_5902940\", \"brand\": \"mastercard\", \"last_four\": \"9375\"}}, \"orders\": [\"#W7553978\", \"#W3239882\", \"#W2598324\"]}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 9,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_order_details({\"order_id\": \"#W7553978\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 10,
+      "role": "tool",
+      "content": "{\"order_id\": \"#W7553978\", \"user_id\": \"mei_ahmed_4909\", \"address\": {\"address1\": \"572 Cedar Street\", \"address2\": \"Suite 469\", \"city\": \"Austin\", \"country\": \"USA\", \"state\": \"TX\", \"zip\": \"78705\"}, \"items\": [{\"name\": \"Skateboard\", \"product_id\": \"1968349452\", \"item_id\": \"4545791457\", \"price\": 186.06, \"options\": {\"deck material\": \"plastic\", \"length\": \"28 inch\", \"design\": \"plain\"}}, {\"name\": \"Vacuum Cleaner\", \"product_id\": \"1762337868\", \"item_id\": \"1345513440\", \"price\": 655.59, \"options\": {\"type\": \"canister\", \"bagged/bagless\": \"bagged\", \"features\": \"cordless\"}}, {\"name\": \"Skateboard\", \"product_id\": \"1968349452\", \"item_id\": \"3098764622\", \"price\": 202.13, \"options\": {\"deck material\": \"plastic\", \"length\": \"34 inch\", \"design\": \"plain\"}}, {\"name\": \"Smart Watch\", \"product_id\": \"6945232052\", \"item_id\": \"1631806422\", \"price\": 339.85, \"options\": {\"color\": \"black\", \"band material\": \"metal\", \"display\": \"AMOLED\"}}], \"status\": \"delivered\", \"fulfillments\": [{\"tracking_id\": [\"873459681869\"], \"item_ids\": [\"4545791457\", \"1345513440\", \"3098764622\", \"1631806422\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1383.63, \"payment_method_id\": \"credit_card_5902940\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 11,
+      "role": "assistant",
+      "content": "[tool_calls]\n- get_order_details({\"order_id\": \"#W3239882\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 12,
+      "role": "tool",
+      "content": "{\"order_id\": \"#W3239882\", \"user_id\": \"mei_ahmed_4909\", \"address\": {\"address1\": \"572 Cedar Street\", \"address2\": \"Suite 469\", \"city\": \"Austin\", \"country\": \"USA\", \"state\": \"TX\", \"zip\": \"78705\"}, \"items\": [{\"name\": \"E-Reader\", \"product_id\": \"3801771308\", \"item_id\": \"9494281769\", \"price\": 252.06, \"options\": {\"screen size\": \"8-inch\", \"connectivity\": \"Wi-Fi\", \"storage\": \"8GB\"}}, {\"name\": \"Tablet\", \"product_id\": \"8024098596\", \"item_id\": \"2106335193\", \"price\": 903.95, \"options\": {\"screen size\": \"10-inch\", \"storage\": \"64GB\", \"color\": \"silver\"}}, {\"name\": \"Portable Charger\", \"product_id\": \"6942297802\", \"item_id\": \"2146648441\", \"price\": 105.85, \"options\": {\"capacity\": \"10000mAh\", \"output\": \"Wireless\", \"color\": \"blue\"}}, {\"name\": \"Makeup Kit\", \"product_id\": \"5149340237\", \"item_id\": \"6509212169\", \"price\": 256.14, \"options\": {\"skin tone\": \"light\", \"kit size\": \"professional\", \"brand\": \"Brand A\"}}], \"status\": \"delivered\", \"fulfillments\": [{\"tracking_id\": [\"618282621876\"], \"item_ids\": [\"9494281769\", \"2106335193\", \"2146648441\", \"6509212169\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1518.0, \"payment_method_id\": \"credit_card_5902940\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 13,
+      "role": "assistant",
+      "content": "Thanks, Mei. I’ve located your account and found your recent delivered orders.\n\nHere’s what I see:\n- Order #W7553978 (delivered): contains\n  - Skateboard — item_id 4545791457\n  - Skateboard — item_id 3098764622\n  - Smart Watch — item_id 1631806422\n  - Vacuum Cleaner — item_id 1345513440\n  Payment method on this order: Mastercard ending 9375 (credit_card_5902940)\n\n- Order #W3239882 (delivered): contains\n  - E-Reader — item_id 9494281769\n  - Tablet — item_id 2106335193\n  - Portable Charger — item_id 2146648441\n  - Makeup Kit — item_id 6509212169\n  Payment method on this order: Mastercard ending 9375 (credit_card_5902940)\n\nBefore I proceed, a quick note: for each delivered order, I can submit a return or exchange only once, so please make sure you include everything you want to change from that order.\n\n1) Return request for Order #W7553978\n- Items to return: both Skateboards (item_ids 4545791457 and 3098764622) and the Smart Watch (item_id 1631806422)\n- Refund method: original credit card (Mastercard ending 9375). Refunds to credit cards take 5–7 business days.\nPlease confirm: Do you want me to submit this return for those three items now? Yes/No\n\n2) E-Reader in Order #W3239882\n- If you want an exchange: I can exchange it for a different option of the same E-Reader (for example, different storage or color), and any price difference would be charged/refunded to your Mastercard ending 9375.\n- If you want the exact same model again, I can process a return instead (exchanges must be to a different variant).\nPlease let me know:\n- Do you prefer to exchange the E-Reader to a different option? If so, tell me the desired option (e.g., storage, color), and I’ll check availability.\n- Or would you like to return the E-Reader for a refund to your Mastercard ending 9375?\n\nOnce you confirm, I’ll proceed and send a final summary before submitting the requests.",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 14,
+      "role": "user",
+      "content": "Thanks for explaining everything in detail!\n\nFor Order #W7553978, yes, I want to return both skateboards and the smart watch, and have the refund go to my credit card.\n\nNow, about the E-Reader in Order #W3239882—I’d actually prefer the exact same model again if that’s an option. Is the identical E-Reader available online for exchange right now? If not, then I’d like to return it for a refund to my credit card.\n\nCan you check if the same E-Reader is available for an exchange?",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 15,
+      "role": "assistant",
+      "content": "[tool_calls]\n- return_delivered_order_items({\"order_id\": \"#W7553978\", \"item_ids\": [\"4545791457\", \"3098764622\", \"1631806422\"], \"payment_method_id\": \"credit_card_5902940\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 16,
+      "role": "tool",
+      "content": "{\"order_id\": \"#W7553978\", \"user_id\": \"mei_ahmed_4909\", \"address\": {\"address1\": \"572 Cedar Street\", \"address2\": \"Suite 469\", \"city\": \"Austin\", \"country\": \"USA\", \"state\": \"TX\", \"zip\": \"78705\"}, \"items\": [{\"name\": \"Skateboard\", \"product_id\": \"1968349452\", \"item_id\": \"4545791457\", \"price\": 186.06, \"options\": {\"deck material\": \"plastic\", \"length\": \"28 inch\", \"design\": \"plain\"}}, {\"name\": \"Vacuum Cleaner\", \"product_id\": \"1762337868\", \"item_id\": \"1345513440\", \"price\": 655.59, \"options\": {\"type\": \"canister\", \"bagged/bagless\": \"bagged\", \"features\": \"cordless\"}}, {\"name\": \"Skateboard\", \"product_id\": \"1968349452\", \"item_id\": \"3098764622\", \"price\": 202.13, \"options\": {\"deck material\": \"plastic\", \"length\": \"34 inch\", \"design\": \"plain\"}}, {\"name\": \"Smart Watch\", \"product_id\": \"6945232052\", \"item_id\": \"1631806422\", \"price\": 339.85, \"options\": {\"color\": \"black\", \"band material\": \"metal\", \"display\": \"AMOLED\"}}], \"status\": \"return requested\", \"fulfillments\": [{\"tracking_id\": [\"873459681869\"], \"item_ids\": [\"4545791457\", \"1345513440\", \"3098764622\", \"1631806422\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1383.63, \"payment_method_id\": \"credit_card_5902940\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": [\"1631806422\", \"3098764622\", \"4545791457\"], \"return_payment_method_id\": \"credit_card_5902940\"}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 17,
+      "role": "assistant",
+      "content": "Your return request for Order #W7553978 is submitted.\n\nDetails:\n- Order: #W7553978\n- Items: Skateboard (4545791457), Skateboard (3098764622), Smart Watch (1631806422)\n- Status: return requested\n- Refund to: Mastercard ending 9375\n- Next steps: You’ll receive an email shortly with instructions on how and where to return the items. Refunds to credit cards take 5–7 business days after we receive and process the return.\n\nRegarding the E-Reader in Order #W3239882:\n- Exchanges can only be made to a different variant of the same product (e.g., different storage, color, or connectivity). An identical-item exchange isn’t supported.\nOptions:\n- If you want a different variant, tell me the desired option (e.g., “16GB storage” or “cellular + Wi‑Fi”), and I’ll check availability and any price difference.\n- Or I can submit a return for the current E-Reader (item_id 9494281769) for a refund to your Mastercard ending 9375.\n\nHow would you like to proceed with the E-Reader?",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 18,
+      "role": "user",
+      "content": "That’s helpful, thank you. In that case, I’d like to go ahead and return the E-Reader for a refund to my credit card. Please submit that request for me.",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 19,
+      "role": "assistant",
+      "content": "Before I submit the return for your E-Reader, here are the details. Please confirm “Yes” to proceed.\n\n- Order: #W3239882 (delivered)\n- Item to return: E-Reader — item_id 9494281769 — price $252.06\n- Refund method: original credit card (Mastercard ending 9375)\n- What happens next: order status will change to “return requested,” you’ll receive an email with return instructions, and the refund will appear 5–7 business days after we receive and process the return.\n\nNote: We can only process one return/exchange request per delivered order. If you want to include any other items from this same order (#W3239882), please let me know now.\n\nPlease reply “Yes” to confirm and I’ll submit the return.",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 20,
+      "role": "user",
+      "content": "Yes, please go ahead and process the return for just the E-Reader from that order. I don’t need to include any other items from #W3239882.",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    },
+    {
+      "step": 21,
+      "role": "assistant",
+      "content": "[tool_calls]\n- return_delivered_order_items({\"order_id\": \"#W3239882\", \"item_ids\": [\"9494281769\"], \"payment_method_id\": \"credit_card_5902940\"})",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 22,
+      "role": "tool",
+      "content": "{\"order_id\": \"#W3239882\", \"user_id\": \"mei_ahmed_4909\", \"address\": {\"address1\": \"572 Cedar Street\", \"address2\": \"Suite 469\", \"city\": \"Austin\", \"country\": \"USA\", \"state\": \"TX\", \"zip\": \"78705\"}, \"items\": [{\"name\": \"E-Reader\", \"product_id\": \"3801771308\", \"item_id\": \"9494281769\", \"price\": 252.06, \"options\": {\"screen size\": \"8-inch\", \"connectivity\": \"Wi-Fi\", \"storage\": \"8GB\"}}, {\"name\": \"Tablet\", \"product_id\": \"8024098596\", \"item_id\": \"2106335193\", \"price\": 903.95, \"options\": {\"screen size\": \"10-inch\", \"storage\": \"64GB\", \"color\": \"silver\"}}, {\"name\": \"Portable Charger\", \"product_id\": \"6942297802\", \"item_id\": \"2146648441\", \"price\": 105.85, \"options\": {\"capacity\": \"10000mAh\", \"output\": \"Wireless\", \"color\": \"blue\"}}, {\"name\": \"Makeup Kit\", \"product_id\": \"5149340237\", \"item_id\": \"6509212169\", \"price\": 256.14, \"options\": {\"skin tone\": \"light\", \"kit size\": \"professional\", \"brand\": \"Brand A\"}}], \"status\": \"return requested\", \"fulfillments\": [{\"tracking_id\": [\"618282621876\"], \"item_ids\": [\"9494281769\", \"2106335193\", \"2146648441\", \"6509212169\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1518.0, \"payment_method_id\": \"credit_card_5902940\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": [\"9494281769\"], \"return_payment_method_id\": \"credit_card_5902940\"}",
+      "name": "tool",
+      "judgable": false,
+      "compress_role": "compress"
+    },
+    {
+      "step": 23,
+      "role": "assistant",
+      "content": "Your return request for the E-Reader has been submitted.\n\nDetails:\n- Order: #W3239882\n- Item: E-Reader (item_id 9494281769)\n- Status: return requested\n- Refund to: Mastercard ending 9375\n- Next steps: You’ll receive an email shortly with instructions to return the item. Refunds to credit cards take 5–7 business days after we receive and process the return.\n\nIs there anything else you’d like help with today?",
+      "name": "assistant",
+      "judgable": true,
+      "compress_role": "preserve"
+    },
+    {
+      "step": 24,
+      "role": "user",
+      "content": "No, that covers everything I needed help with. Thank you for handling all the returns! ###STOP###",
+      "name": "user",
+      "judgable": false,
+      "compress_role": "default"
+    }
+  ],
+  "metadata": {
+    "dataset": "trajerrbench",
+    "task_id": "retail_failed_gpt-5::1c46a08e-785e-40b7-80af-5b9e49bb0b48",
+    "task_description": "Hi, I need some help with a few recent purchases. I just bought two skateboards, and honestly, I'm pretty upset with their quality. I'd like to arrange a return for them and get my money refunded back to my credit card. Can you assist me with that?",
+    "reward": 0,
+    "annotation": {
+      "critical_error_step": 13,
+      "critical_error_type": "reason.InvalidInference"
+    },
+    "extra": {
+      "agent_framework_description": "A user interacts with a single `assistant` that must follow the scene policy shown in the leading `system` message while executing the user's request. `tool` messages are tool-call return values. Critical errors can only be attributed to an `assistant` step; `user` and `tool` steps are never the critical step. The assistant should try to fulfil the user's request as much as possible, but the user may make unreasonable or out-of-policy requests; whenever the user's request conflicts with the `system` policy, the `system` policy takes precedence and the assistant must refuse or redirect rather than comply.\n\nDATASET NOTES (tau²-bench). The leading `system` message lists binding procedural rules using \"必须\" / \"must\" / \"before X you must Y\" / \"only ... if\" / \"never\". These rules are hard constraints on every assistant step that touches the database (booking, modifying, cancelling, refunding, returning) — typical examples include verifying user identity (email lookup, name+zip) before any account-data operation. When the user refers to a target object indirectly (\"my recent order\", \"the items I want to cancel\") and the prior `tool` outputs visibly enumerate multiple candidate objects under that user (multiple `orders`, multiple `reservations`, multiple membership tiers), the candidate set is fully visible — picking one to act on is a substantive commitment, not a probe; the tool response for that one candidate yields no information about the others, so it is not self-correcting on the next turn. The system policy also constrains the option space the assistant may offer the user (e.g. cancellation may be whole-order-only; modification may be limited to same-product-type variants). When the assistant presents a procedural option to the user (\"you can return only this item\", \"you can wait until delivery and then return\", \"I can split the cancellation\"), that option must be authorised either by the system policy verbatim or by a prior tool result for the specific object — even if the assistant is only presenting choices and not yet executing, presenting an option the assistant has not verified to be permitted commits the assistant to a path that may be unworkable, and the user may rely on the option as if it were available.",
+      "language": "en",
+      "source_benchmark": "tau2bench",
+      "pair_id": "tau2bench:retail_failed_gpt-5::1c46a08e-785e-40b7-80af-5b9e49bb0b48"
+    }
+  }
+}

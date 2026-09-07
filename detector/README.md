@@ -7,7 +7,7 @@ The detector localizes a critical error in a failed trajectory through an OpenAI
 ## Pipeline
 
 ```text
-data/unified/<dataset>/*.json
+registered detector-ready data/*.json
   → Stage A: multi-granularity compression
   → Stage B: evidence-grounded error triggers
   → Stage C1: object-anchored instance clustering
@@ -40,7 +40,7 @@ export OPENAI_API_KEY="..."
 export OPENAI_BASE_URL="https://api.openai.com/v1"
 export DETECTOR_MODEL="your-model-name"
 
-DATASETS="alfworld" bash run_pipeline.sh
+DATASETS="trajerrbench_zh_tau2bench" bash run_pipeline.sh
 ```
 
 The runner is resumable and writes to `outputs` by default:
@@ -54,23 +54,25 @@ outputs/<dataset>_final/
 outputs/score_<dataset>.json
 ```
 
-Override locations with `UNIFIED_ROOT` and `OUTPUT_ROOT`; tune requests with `FILE_CONCURRENCY`, `LLM_CONCURRENCY`, `MAX_TOKENS`, and `TEMPERATURE`.
+Dataset locations come from `data_processing/dataset_registry.py`. Override
+the output location with `OUTPUT_ROOT`; tune requests with `FILE_CONCURRENCY`,
+`LLM_CONCURRENCY`, `MAX_TOKENS`, and `TEMPERATURE`.
 
 ## Evaluate
 
 ```bash
 python detector/score_steps.py \
-  --unified-dir data/unified/alfworld \
-  --pred-dir outputs/alfworld_final \
-  --out outputs/score_alfworld.json
+  --unified-dir data/trajerrbench/zh/tau2bench \
+  --pred-dir outputs/trajerrbench_zh_tau2bench_final \
+  --out outputs/score_trajerrbench_zh_tau2bench.json
 
 python detector/score_steps_breakdown.py \
-  --unified-dir data/unified/alfworld \
-  --pred-dir outputs/alfworld_final \
-  --stage-b-dir outputs/alfworld_stage_b \
-  --phase1-dir outputs/alfworld_phase1 \
-  --phase2-dir outputs/alfworld_phase2 \
-  --out outputs/breakdown_alfworld.json
+  --unified-dir data/trajerrbench/zh/tau2bench \
+  --pred-dir outputs/trajerrbench_zh_tau2bench_final \
+  --stage-b-dir outputs/trajerrbench_zh_tau2bench_stage_b \
+  --phase1-dir outputs/trajerrbench_zh_tau2bench_phase1 \
+  --phase2-dir outputs/trajerrbench_zh_tau2bench_phase2 \
+  --out outputs/breakdown_trajerrbench_zh_tau2bench.json
 ```
 
 The scorer reports exact, loose-1, and loose-2 step accuracy plus taxonomy metrics where labels are available. Successful trajectories and system failures are excluded.
@@ -81,10 +83,10 @@ The scorer reports exact, loose-1, and loose-2 step accuracy plus taxonomy metri
 
 ```bash
 python applications/generate_feedback.py \
-  --final_dir outputs/alfworld_final \
-  --trajectory_dir data/unified/alfworld \
-  --stage_a_dir outputs/alfworld_stage_a \
-  --output_dir outputs/alfworld_report \
+  --final_dir outputs/trajerrbench_zh_tau2bench_final \
+  --trajectory_dir data/trajerrbench/zh/tau2bench \
+  --stage_a_dir outputs/trajerrbench_zh_tau2bench_stage_a \
+  --output_dir outputs/trajerrbench_zh_tau2bench_report \
   --base_url "$OPENAI_BASE_URL" \
   --model "$DETECTOR_MODEL" \
   --api_key "$OPENAI_API_KEY" \

@@ -1,6 +1,6 @@
 """Bake v5 per-step hyperparameters into existing unified trajectory files.
 
-For every message of every unified trajectory under ``data/unified/<dataset>/``
+For every message of every registered detector-ready trajectory
 this script writes two additive fields:
 
 * ``judgable``      : ``True`` iff the message can ever be marked as the
@@ -24,7 +24,7 @@ already written by ``data_processing/_standard_messages.py`` into
 CLI::
 
     python -m data_processing.bake_v5_fields                # all datasets
-    python -m data_processing.bake_v5_fields --datasets alfworldsub gaiasub
+    python -m data_processing.bake_v5_fields --datasets trajerrbench_zh_tau2bench
     python -m data_processing.bake_v5_fields --dry-run      # report only
 """
 
@@ -36,10 +36,15 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from data_processing.dataset_registry import (
+    available_datasets,
+    canonical_key,
+    dataset_path,
+    get_dataset,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = Path(__file__).resolve().parent / "dataset_config.json"
-DEFAULT_UNIFIED_ROOT = REPO_ROOT / "data" / "unified"
 
 
 # ---------------------------------------------------------------------------
@@ -171,22 +176,21 @@ def process_file(
 def _select_datasets(
     config: Dict[str, Dict[str, List[str]]],
     requested: Optional[List[str]],
-    unified_root: Path,
 ) -> List[str]:
-    available = sorted(p.name for p in unified_root.iterdir() if p.is_dir())
     if requested:
-        missing_cfg = [d for d in requested if d not in config]
-        missing_dir = [d for d in requested if d not in available]
+        resolved = [canonical_key(d) for d in requested]
+        missing_cfg = [d for d in resolved if get_dataset(d).profile not in config]
+        missing_dir = [d for d in resolved if not dataset_path(d).is_dir()]
         if missing_cfg:
             raise SystemExit(
-                f"datasets {missing_cfg} not found in dataset_config.json"
+                f"dataset profiles for {missing_cfg} not found in dataset_config.json"
             )
         if missing_dir:
-            raise SystemExit(
-                f"datasets {missing_dir} not found under {unified_root}"
-            )
-        return requested
-    return [d for d in available if d in config]
+            raise SystemExit(f"dataset directories do not exist: {missing_dir}")
+        return resolved
+    return [
+        d for d in available_datasets() if get_dataset(d).profile in config
+    ]
 
 
 def main() -> int:
@@ -196,12 +200,8 @@ def main() -> int:
         help=f"path to dataset_config.json (default: {DEFAULT_CONFIG})",
     )
     parser.add_argument(
-        "--unified-root", type=Path, default=DEFAULT_UNIFIED_ROOT,
-        help=f"root of unified trajectory dirs (default: {DEFAULT_UNIFIED_ROOT})",
-    )
-    parser.add_argument(
         "--datasets", nargs="+", default=None,
-        help="dataset folder names to process; default: all that have a config entry AND a folder",
+        help="registered dataset keys to process; default: all available datasets",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
@@ -210,12 +210,12 @@ def main() -> int:
     args = parser.parse_args()
 
     config = load_config(args.config)
-    datasets = _select_datasets(config, args.datasets, args.unified_root)
+    datasets = _select_datasets(config, args.datasets)
 
     grand: Dict[str, int] = {}
     for dataset in datasets:
-        cfg = config[dataset]
-        ds_dir = args.unified_root / dataset
+        cfg = config[get_dataset(dataset).profile]
+        ds_dir = dataset_path(dataset)
         files = sorted(ds_dir.glob("*.json"))
         ds_stats = {"compress": 0, "preserve": 0, "default": 0,
                     "judgable": 0, "non_judgable": 0}

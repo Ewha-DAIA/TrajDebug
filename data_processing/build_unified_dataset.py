@@ -3,18 +3,19 @@
 Usage examples::
 
     python -m data_processing.build_unified_dataset --all
-    python -m data_processing.build_unified_dataset --dataset whoandwhen
+    python -m data_processing.build_unified_dataset --dataset trajerrbench_zh_tau2bench
     python -m data_processing.build_unified_dataset \
-        --dataset gaia --src data/GAIA --out data/unified/gaia \
-        --labels data/gaia_labels.json
+        --dataset trajerrbench_zh_tau2bench --src /path/to/tau2bench \
+        --out data/generated/trajerrbench_zh_tau2bench
 
-The CLI is idempotent: it re-emits one ``data/unified/<dataset>/<stem>.json``
-per source trajectory and overwrites any existing file.
+The CLI is idempotent: it re-emits one JSON per source trajectory and
+overwrites files in its generated output directory.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
@@ -27,11 +28,13 @@ from data_processing import (
     webshop,
     whoandwhen,
 )
+from data_processing.schema import validate_unified
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA_DIR = REPO_ROOT / "data"
-DEFAULT_UNIFIED_DIR = DEFAULT_DATA_DIR / "unified"
+DEFAULT_SOURCE_DIR = DEFAULT_DATA_DIR / "sources"
+DEFAULT_GENERATED_DIR = DEFAULT_DATA_DIR / "generated"
 
 
 # Each entry: (src_subdir, label_filename_or_None, converter_fn)
@@ -39,15 +42,39 @@ DatasetSpec = Tuple[str, Optional[str], Callable[..., List[str]]]
 
 
 DATASETS: Dict[str, DatasetSpec] = {
-    "whoandwhen":   ("Who_and_When/Hand-Crafted",        None, whoandwhen.convert_directory),
-    "whoandwhen_algorithm": (
+    "whoandwhen_handcrafted": (
+        "Who_and_When/Hand-Crafted", None, whoandwhen.convert_directory,
+    ),
+    "whoandwhen_algorithm_generated": (
         "Who_and_When/Algorithm-Generated", None, whoandwhen.convert_directory_algorithm,
     ),
-    "alfworld":     ("AgentDebugBench/ALFWorld", "AgentDebugBench/alfworld_labels.json", alfworld.convert_directory),
-    "gaia":         ("AgentDebugBench/GAIA",     "AgentDebugBench/gaia_labels.json",     gaia.convert_directory),
-    "webshop":      ("AgentDebugBench/WebShop",  "AgentDebugBench/webshop_labels.json",  webshop.convert_directory),
-    "tau2bench":    ("OurBench/Tau^2-Bench",     None,                                   tau2bench.convert_directory),
-    "swebenchpro":  ("OurBench/Swe-Bench-Pro",   None,                                   swebenchpro.convert_directory),
+    "agentdebugbench_alfworld": (
+        "AgentDebugBench/ALFWorld", "AgentDebugBench/alfworld_labels.json", alfworld.convert_directory,
+    ),
+    "agentdebugbench_gaia": (
+        "AgentDebugBench/GAIA", "AgentDebugBench/gaia_labels.json", gaia.convert_directory,
+    ),
+    "agentdebugbench_webshop": (
+        "AgentDebugBench/WebShop", "AgentDebugBench/webshop_labels.json", webshop.convert_directory,
+    ),
+    "trajerrbench_zh_tau2bench": (
+        "TrajErrBench/Tau2Bench", None, tau2bench.convert_directory,
+    ),
+    "trajerrbench_zh_swebenchpro": (
+        "TrajErrBench/SWEBenchPro", None, swebenchpro.convert_directory,
+    ),
+}
+
+_METADATA_IDENTITY = {
+    "agentdebugbench_alfworld": ("agentdebugbench_alfworld", "alfworld", None),
+    "agentdebugbench_gaia": ("agentdebugbench_gaia", "gaia", None),
+    "agentdebugbench_webshop": ("agentdebugbench_webshop", "webshop", None),
+    "whoandwhen_handcrafted": ("whoandwhen_handcrafted", "handcrafted", None),
+    "whoandwhen_algorithm_generated": (
+        "whoandwhen_algorithm_generated", "algorithm_generated", None,
+    ),
+    "trajerrbench_zh_tau2bench": ("trajerrbench", "tau2bench", "zh"),
+    "trajerrbench_zh_swebenchpro": ("trajerrbench", "swebenchpro", "zh"),
 }
 
 
@@ -60,11 +87,11 @@ def _convert_one(
 ) -> int:
     spec = DATASETS[name]
     src_subdir, default_label, fn = spec
-    src_dir = src or (DEFAULT_DATA_DIR / src_subdir)
-    out_dir = out or (DEFAULT_UNIFIED_DIR / name)
+    src_dir = src or (DEFAULT_SOURCE_DIR / src_subdir)
+    out_dir = out or (DEFAULT_GENERATED_DIR / name)
     label_path = labels
     if label_path is None and default_label:
-        candidate = DEFAULT_DATA_DIR / default_label
+        candidate = DEFAULT_SOURCE_DIR / default_label
         label_path = candidate if candidate.exists() else None
 
     print(f"[{name}] src={src_dir} out={out_dir} labels={label_path}")
@@ -76,6 +103,25 @@ def _convert_one(
         written = fn(src_dir, out_dir, label_path)
     else:
         written = fn(src_dir, out_dir)
+    dataset_name, subset, language = _METADATA_IDENTITY[name]
+    for written_path in written:
+        path = Path(written_path)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            metadata = payload.get("metadata", {})
+            metadata["dataset"] = dataset_name
+            extra = metadata.setdefault("extra", {})
+            extra["source_benchmark"] = subset
+            if language:
+                extra["language"] = language
+                extra["pair_id"] = f"{subset}:{metadata.get('task_id', path.stem)}"
+            validate_unified(payload)
+            path.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        except Exception as exc:
+            raise RuntimeError(f"failed to normalize {path}: {exc}") from exc
     print(f"[{name}] wrote {len(written)} unified trajectories")
     return len(written)
 

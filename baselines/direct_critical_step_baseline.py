@@ -21,7 +21,7 @@ with the same script.
 Usage (single file):
 
     python experiments/direct_critical_step_baseline.py \
-        --input data/unified/alfworldsub/3.json \
+        --input data/trajerrbench/zh/tau2bench/airline_failed_gpt-5_b41f5705-6a97-4e0c-b83b-e2b6fd8c7c92.json \
         --output_dir output/direct_baseline \
         --base_url <endpoint> \
         --model <name>
@@ -29,7 +29,7 @@ Usage (single file):
 Usage (batch over a directory):
 
     python experiments/direct_critical_step_baseline.py \
-        --input data/unified/alfworldsub \
+        --input data/trajerrbench/zh/tau2bench \
         --output_dir output/direct_baseline \
         --base_url <endpoint> \
         --model <name>

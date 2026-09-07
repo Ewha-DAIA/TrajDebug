@@ -15,12 +15,31 @@ ENTRYPOINTS = [
     "detector/score_steps.py",
     "applications/generate_feedback.py",
 ]
+MODULE_ENTRYPOINTS = [
+    "data_processing.dataset_registry",
+    "data_processing.validate_dataset",
+    "data_processing.release_metadata",
+    "data_processing.build_trajerrbench_english",
+]
 
 
 @pytest.mark.parametrize("entrypoint", ENTRYPOINTS)
 def test_entrypoint_help(entrypoint):
     result = subprocess.run(
         [sys.executable, entrypoint, "--help"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "usage:" in result.stdout.lower()
+
+
+@pytest.mark.parametrize("module", MODULE_ENTRYPOINTS)
+def test_module_entrypoint_help(module):
+    result = subprocess.run(
+        [sys.executable, "-m", module, "--help"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,

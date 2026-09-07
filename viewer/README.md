@@ -8,7 +8,7 @@ From the repository root:
 
 ```bash
 pip install -e ".[viewer]"
-python -m viewer.server --dataset alfworld --output-dir outputs
+python -m viewer.server --dataset trajerrbench_zh_tau2bench --output-dir outputs
 ```
 
 Open <http://localhost:8000>.
@@ -18,7 +18,7 @@ Open <http://localhost:8000>.
 For `<dataset>` and `<task_id>`, the viewer reads:
 
 ```text
-data/unified/<dataset>/<task_id>.json
+<registered dataset path>/<task_id>.json
 outputs/<dataset>_phase1/<task_id>_stage_c_phase1.json
 outputs/<dataset>_phase2/<task_id>_stage_c_phase2.json
 outputs/<dataset>_report/<task_id>_report.json
@@ -30,7 +30,8 @@ The unified trajectory is required. Phase 1, Phase 2, and report files are optio
 
 - `--dataset`: dataset selected on startup.
 - `--output-dir`: detector output root; default `outputs`.
-- `--unified-root`: unified data root; default `data/unified`.
+- `--unified-root`: use the dataset `registry` (default), or supply a custom
+  legacy root containing `<dataset>/<task_id>.json`.
 - `--host`: bind address; default `127.0.0.1`.
 - `--port`: web port; default `8000`.
 
