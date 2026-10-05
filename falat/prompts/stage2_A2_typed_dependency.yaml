@@ -1,0 +1,56 @@
+id: typed_dependency
+stage: "Stage 2 - Constructing typed dependencies for candidate pruning, C -> C′ (§2.2)"
+source: "FALAT Appendix A.2, Typed-dependency prompt"
+verbatim: true
+notes: >
+  {mid_level} = MID_LEVEL entries of all windows (= C); window-crossing regions
+  are grouped (assumption #2). Pruning C -> C′ is done by the LLM in the
+  Candidate-Pruning Summary (assumption #6).
+placeholders: [high_level, mid_level, low_level, num_steps, step_index]
+template: |
+  # HIERARCHICAL REPRESENTATION
+  ## High Level
+  {high_level}
+  ## Candidate Steps / Key Moments
+  {mid_level}
+  ## Supporting Evidence
+  {low_level}
+  # STEP INDEX (all {num_steps} steps, condensed)
+  {step_index}
+  # INSTRUCTIONS
+  Analyze how the candidate steps depend on one another. Your goal is to determine which
+  candidates may have introduced, propagated, transformed, or eliminated a deviation that
+  affects the final output.
+  For each ordered pair of candidate steps in temporal order:
+  1. Determine whether the later step depends on the earlier step’s output, decision, or
+  assumption.
+  2. Assign one transition label from the set below.
+  3. State briefly how the later step relates to the earlier step and whether this
+  relation suggests source, propagation, correction, redundancy, or irrelevance.
+  # OUTPUT FORMAT
+  Write a single markdown document with the following sections:
+  ## Typed Dependencies
+  For each relevant ordered pair:
+  ### Step X → Step Y
+  - Type: follow_up | redundancy | no_influence | error_shift | correction | dead_end
+  - Relationship: 1 sentence on how Y depends on X.
+  # TRANSITION LABELS
+  - follow_up: step Y builds on the output, decision, or assumption introduced by step
+  X. If step X is already corrupted, treat step Y as a downstream carrier.
+  - redundancy: step Y repeats, restates, or rechecks information already provided by
+  step X without adding new evidence or changing the trajectory.
+  - no_influence: step Y does not consume or depend on the output of step X.
+  - error_shift: step Y introduces a new deviation, shifts the trajectory away from the
+  expected path, or transforms an upstream issue at step X into a different downstream
+  error.
+  - correction: step Y fixes, compensates for, or invalidates a deviation introduced by
+  step X.
+  - dead_end: step X leads to an output that is not consumed by step Y or by the final
+  answer.
+  ## Candidate-Pruning Summary
+  Summarize which candidates remain plausible error sources or downstream carriers
+  whose effects can still reach the final output, and which candidates can be pruned as
+  redundant, corrected, unrelated, or dead ends.
+  ## Value Flow
+  Describe how information and decisions propagate from retained candidates toward the
+  final output. If the chain is incomplete or broken, state where and why.

@@ -1,0 +1,56 @@
+id: hierarchical
+stage: "Stage 1 - Constructing the search space: hierarchical representation M and candidate set C (§2.1)"
+source: "FALAT Appendix A.1, Hierarchical-representation prompt (M construction)"
+verbatim: true
+notes: >
+  Called once per non-overlapping k-step window (assumption #1, k = 10):
+  {step_index}, {steps_block} and {num_steps} describe one window.
+  MID_LEVEL / LOW_LEVEL entries define the candidate set C.
+placeholders: [context_analysis, question, answer_type, constraints, agents_block,
+               final_answer, num_steps, step_index, steps_block]
+template: |
+  # CONTEXT ANALYSIS (your lens for reading this trajectory)
+  {context_analysis}
+  # TASK CONTEXT
+  Question: {question}
+  Expected answer type: {answer_type}
+  Constraints: {constraints}
+  Agents involved:
+  {agents_block}
+  Agent’s final answer: {final_answer}
+  Step-to-Agent index ({num_steps} steps total):
+  {step_index}
+  # FULL TRAJECTORY ({num_steps} steps)
+  {steps_block}
+  # INSTRUCTIONS
+  Using the context analysis as your lens, read the trajectory and produce three memory
+  documents. Focus on what is surprising, suspicious, or inconsistent, not on confirming
+  expectations.
+  ===HIGH_LEVEL===
+  Write 4–6 bullet points covering:
+  - What is the task asking?
+  - What did the agents answer?
+  - What overall strategy did the agents follow?
+  - What looks wrong at a glance?
+  - Which agent handled the most critical work?
+  ===MID_LEVEL===
+  Write one entry per key moment. Skip all routine steps.
+  For each key moment:
+  ### Step N (AgentName)
+  What happened and why it matters. (2–3 sentences max)
+  Include a step if:
+  - It computed or chose a value that feeds into the final answer
+  - It made a decision that changed the trajectory’s direction
+  - Something looks wrong, suspicious, or surprising
+  - It introduced NEW information
+  - It matches an error signal from the context analysis
+  ===LOW_LEVEL===
+  Write one entry per suspicious or critical step.
+  For each entry:
+  ### Step N (AgentName)
+  - Exact values computed or used
+  - Data provenance
+  - Data completeness
+  - Assumptions made
+  - What specifically looks wrong or risky
+  - What inputs this step received and whether they were correct

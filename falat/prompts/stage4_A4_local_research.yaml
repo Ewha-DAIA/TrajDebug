@@ -1,0 +1,81 @@
+id: local_research
+stage: "Stage 4 - Local re-search: adversarial verification over [t̂ − 2, t̂ + 2] -> t̃ (§2.4)"
+source: "FALAT Appendix A.4, Local re-search prompt (adversarial verification)"
+verbatim: true
+notes: >
+  {candidates_block} holds, for every step in the window, the raw content, MID
+  and LOW entries and typed transitions, plus π's ERROR_SIGNALS (assumption #7);
+  this prompt has no other evidence slot. {t̂} / {â} come from Stage 3b.
+placeholders: [question, final_answer, agents_block, total_steps, "t̂", "â",
+               predicted_desc, backward_chain, candidates_block]
+template: |
+  # TASK CONTEXT
+  Question: {question}
+  Final answer given: {final_answer}
+  Agents: {agents_block}
+  Total steps: {total_steps}
+  # PRELIMINARY DIAGNOSIS
+  Predicted decisive error: Step {t̂} by {â} –- {predicted_desc}
+  Backward chain: {backward_chain}
+  # LOCAL WINDOW ([t̂ − 2, t̂ + 2])
+  {candidates_block}
+  # ROLE DEFINITIONS
+  For each step X in the local window, assign one of the following roles:
+  - ROOT_CAUSE: step X independently introduces the decisive error, such that correcting
+  it would change the final output.
+  - PROPAGATION: step X consumes an upstream error and carries it into downstream
+  reasoning or output.
+  - SYMPTOM: step X reflects an existing error without materially contributing to
+  downstream computation.
+  - CONTRIBUTING: step X is independently problematic but is not by itself sufficient to
+  change the final output.
+  # INSTRUCTIONS
+  ## Step A: FOR-AND-AGAINST
+  For each step in the local window:
+  1. give 1–2 arguments for it being the decisive error;
+  2. give 1–2 arguments against it being the decisive error;
+  3. assign a suspicion score in [0, 1];
+  4. assign one role: ROOT_CAUSE, SYMPTOM, PROPAGATION, or CONTRIBUTING.
+  Be critical. Do not simply confirm the current diagnosis; challenge it against nearby
+  alternatives.
+  ## Step B: COUNTERFACTUAL TEST
+  For the top-3 candidates by suspicion score:
+  - If only this step were corrected, would the final answer become correct?
+  - Provide one sentence of reasoning.
+  ## Step C: FINAL VERDICT
+  Based on Steps A and B, select the step with the highest suspicion score that also passes
+  the counterfactual test. Produce a ranked list of all local candidates and return either
+  CONFIRM or REVISE.
+  # OUTPUT FORMAT
+  {
+    "candidates": [
+       {
+         "step": <int>,
+         "agent": "<name>",
+         "for": ["<point>", ...],
+         "against": ["<point>", ...],
+         "suspicion_score": <float 0.0–1.0>,
+         "classification": "<ROOT_CAUSE | SYMPTOM | PROPAGATION | CONTRIBUTING>"
+       }
+    ],
+    "counterfactual_tests": [
+       {
+         "step": <int>,
+         "passes": <true | false>,
+         "reasoning": "<1 sentence>"
+       }
+    ],
+    "ranked_steps": [<int>, <int>, ...],
+    "final_verdict": {
+       "decision": "<CONFIRM | REVISE>",
+       "decisive_step": <int>,
+       "decisive_agent": "<name>",
+       "failure_mode": "<wrong_query | wrong_logic | wrong_interpretation |
+  wrong_assumption | wrong_calculation | wrong_filter | missed_info | hallucination |
+  other>",
+       "description": "<1–2 sentences>",
+       "confidence": "<low | moderate | high>",
+       "reasoning": "<1–2 sentences on why you confirmed or revised>"
+    }
+  }
+  Output only the JSON object.

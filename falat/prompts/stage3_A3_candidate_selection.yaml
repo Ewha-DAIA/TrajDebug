@@ -1,0 +1,42 @@
+id: candidate_selection
+stage: "Stage 3a - Dependency-guided search: narrowing C′ -> C_H, top K = 3 (§2.3)"
+source: "FALAT Appendix A.3, High-confidence candidate selection prompt (C_H)"
+verbatim: true
+notes: >
+  {transitions_section} = the full Stage-2 output. `template` is the paper text;
+  `appended_output_format` is NOT in the paper (assumption #4) and is inserted
+  right before the final "Output only the JSON object." line.
+placeholders: [question, answer_type, final_answer, agents_block, step_index,
+               high_level, mid_level, transitions_section]
+template: |
+  # TASK CONTEXT
+  Question: {question}
+  Expected answer type: {answer_type}
+  Final answer given: {final_answer}
+  Agents:
+  {agents_block}
+  Step-to-Agent mapping:
+  {step_index}
+  # TRAJECTORY REPRESENTATION
+  ## Big Picture
+  {high_level}
+  ## Key Moments
+  {mid_level}
+  {transitions_section}
+  # INSTRUCTIONS
+  Identify the 2–3 steps most likely to contain the decisive error. Use the step-to-agent
+  mapping to assign the correct agent to each step. Rank the candidates by likelihood,
+  with the most suspicious step first.
+  Output only the JSON object.
+appended_output_format: |
+  # OUTPUT FORMAT
+  {
+    "candidates": [
+      {
+        "rank": <int, 1 = most suspicious>,
+        "step": <int>,
+        "agent": "<name>",
+        "reasoning": "<1–2 sentences>"
+      }
+    ]
+  }

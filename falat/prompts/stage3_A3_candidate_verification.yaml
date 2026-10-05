@@ -1,0 +1,58 @@
+id: candidate_verification
+stage: "Stage 3b - Dependency-guided search: counterfactual verification C_H -> t̂ (§2.3)"
+source: "FALAT Appendix A.3, Candidate verification prompt"
+verbatim: true
+notes: >
+  {candidates_block} carries what §2.3 says is provided but has no slot
+  (π's ERROR_SIGNALS, 3a reasoning, MID entry, typed transitions involving the
+  step; assumption #7). `appended_output_format` is NOT in the paper
+  (assumption #4); its description / backward_chain feed the A.4 prompt.
+placeholders: [question, final_answer, step_index, candidates_block, raw_steps, low_level]
+template: |
+  # TASK CONTEXT
+  Question: {question}
+  Final answer given: {final_answer}
+  Step-to-Agent mapping:
+  {step_index}
+  # CANDIDATES TO VERIFY
+  {candidates_block}
+  # LOCAL RAW EVIDENCE
+  Only the candidate steps and their immediate neighbors are shown. Candidate steps are
+  marked explicitly.
+  {raw_steps}
+  # LINKED LOW-LEVEL EVIDENCE
+  {low_level}
+  # INSTRUCTIONS
+  For each candidate, evaluate the following three criteria:
+  1. Error independence. Does this step introduce the error, or merely inherit it from an
+  upstream fault? Use the typed dependency structure to trace whether the candidate is an
+  error source or a downstream carrier.
+
+  2. Counterfactual sufficiency. If this step’s output, decision, or assumption were
+  corrected, would the final answer recover the expected output while keeping prior steps
+  fixed and allowing subsequent steps to adapt?
+
+  3. Temporal precedence. Among candidates satisfying the above criteria, prefer the
+  earliest step.
+  Select the candidate that best satisfies these conditions and return the decisive error
+  together with supporting reasoning.
+  Output only the JSON object.
+appended_output_format: |
+  # OUTPUT FORMAT
+  {
+    "evaluations": [
+      {
+        "step": <int>,
+        "agent": "<name>",
+        "error_independence": {"passes": <true | false>, "reasoning": "<1 sentence>"},
+        "counterfactual_sufficiency": {"passes": <true | false>, "reasoning": "<1 sentence>"}
+      }
+    ],
+    "decisive_error": {
+      "step": <int>,
+      "agent": "<name>",
+      "description": "<1–2 sentences: what went wrong>",
+      "backward_chain": "<e.g. Step 12 → Step 15 → Step 20 → final answer>",
+      "reasoning": "<1–2 sentences: why this candidate, incl. temporal precedence>"
+    }
+  }

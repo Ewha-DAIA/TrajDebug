@@ -33,3 +33,9 @@ dist/
 
 # Local auxiliary sources
 /other_codes/annotation_swe_bench/
+# FALAT reproduction
+/falat/outputs/
+/falat/**/*.log
+/falat/**/errors.jsonl
+*.key
+secrets*.json

@@ -1,0 +1,25 @@
+id: task_spec
+stage: "Stage 0 - fill {answer_type} / {constraints}"
+source: "NOT IN THE PAPER (reproduction assumption #5, see falat/README.md)"
+verbatim: false
+notes: >
+  Who&When has no answer-type / constraint fields, but the A.1 and A.3 prompts
+  need them. This pre-call sees only the question (never the ground truth) and
+  its result fills those placeholders in every later prompt.
+placeholders: [question]
+template: |
+  # QUESTION
+  {question}
+  # INSTRUCTIONS
+  Read only the question above. Do not try to answer it.
+  Describe (1) the expected answer type, precisely (e.g., a single integer, a
+  person's full name, a comma-separated list of names, a URL, a date), and
+  (2) the explicit constraints stated in the question (units, formatting,
+  time period, location, filters, rounding). If no constraint is stated, use
+  "None stated".
+  # OUTPUT FORMAT
+  {
+  "answer_type": "<short description>",
+  "constraints": "<semicolon-separated list, or None stated>"
+  }
+  Output only the JSON object.

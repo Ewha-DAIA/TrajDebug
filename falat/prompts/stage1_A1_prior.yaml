@@ -1,0 +1,43 @@
+id: prior
+stage: "Stage 1 - Constructing the search space: external prior π (§2.1)"
+source: "FALAT Appendix A.1, External-prior prompt (π construction)"
+verbatim: true
+notes: >
+  Built from the task specification, agent roster and the observed wrong output
+  only; the intermediate trajectory is not shown. Output sections =
+  π (QUESTION_ANALYSIS / AGENT_ROLES / ERROR_SIGNALS).
+placeholders: [question, answer_type, constraints, agents_block, final_answer]
+template: |
+  # QUESTION
+  Question: {question}
+  Expected answer type: {answer_type}
+  Constraints: {constraints}
+  # AGENTS
+  {agents_block}
+  # AGENT’S FINAL ANSWER (WRONG)
+  {final_answer}
+  # INSTRUCTIONS
+  Produce the following sections. Stay observational; do not plan a solution.
+  ===QUESTION_ANALYSIS===
+  - What is the question asking for? Be precise about the answer type.
+  - What kind of reasoning is required (e.g., retrieval, calculation, comparison,
+  cross-referencing, verification)?
+  - What makes this question hard (e.g., ambiguity, multiple required data points, domain
+  knowledge)?
+  ===AGENT_ROLES===
+  For each agent, describe:
+  - What domain expertise they bring
+  - What they are equipped to do vs. what falls outside their stated role
+  - What a competent agent in this role should be expected to catch or verify
+  ===ERROR_SIGNALS===
+  Based on the question type and the observed wrong final answer, what patterns should we
+  watch for when reading the trajectory?
+  Examples of error signals:
+  - Data truncation (incomplete lists, pagination, “showing N of M ”)
+  - Cross-reference with incomplete data on one or both sides
+  - Fabricated data (values that appear without a retrieval or calculation source)
+  - Domain confusion (agent working outside its expertise)
+  - Verification theater (agent “confirms” by restating, not by checking)
+  - Wrong entity / wrong time period / off-by-one errors
+  - Placeholder values used as real data
+  List 3–5 specific signals tailored to this question.
